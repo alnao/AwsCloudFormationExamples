@@ -9,7 +9,7 @@ Parameters:
   SourceBucket:
     Type: String
     Description: Source Bucket
-    Default: alberto-input
+    Default: formazione-sftp-simulator
   SourcePath:
     Type: String
     Description: Source Path senza barre iniziali e finali
@@ -21,7 +21,7 @@ Parameters:
   DestBucket:
     Type: String
     Description: Bucket destinazione
-    Default: alberto-input2
+    Default: formazione-alberto
 #  DestFileName:
 #    Type: String
 #    Description: Source Path solo il nome del file
@@ -49,7 +49,7 @@ Resources:
     Properties:
       Location: ./StateMachine/template.yaml
       Parameters:
-        SFName: smEsempio08
+        SFName: smEsempio07
         SourceBucket: !Ref SourceBucket
         SourcePath: !Ref SourcePath
         DestBucket: !Ref DestBucket
@@ -65,8 +65,6 @@ Resources:
         DestBucket: !Ref DestBucket
         DestFilePath: !Ref DestFilePath
         #DestFileName: !Ref DestFileName
-        #NO StateMachineArn: !GetAtt StateMachine.Outputs.StateMachineArn
-        #NO StateMachineName: !GetAtt StateMachine.Outputs.StateMachineName
 
 Outputs:
   StackName:

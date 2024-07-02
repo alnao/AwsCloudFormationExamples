@@ -1,7 +1,7 @@
 # AWS CloudFormation Examples by AlNao - 06 EventBridge
+AWS CloudFormation Examples by [AlNao](https://www.alnao.it), nel README esterno i prerequisiti come AWS-CLI-SAM. 
 
-Configurazione di Eventbridge per richiamare una lambda come trigger o come evento Cron.
-In questo esempio la lambda è in un file python dedicato. 
+Configurazione di Eventbridge per richiamare una lambda come trigger o come evento Cron. In questo esempio la lambda è in un file python dedicato. 
 
 
 ## CloudFormation

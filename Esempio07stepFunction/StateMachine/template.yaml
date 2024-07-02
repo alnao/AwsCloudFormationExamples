@@ -77,7 +77,7 @@ Resources:
   StateMachineLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      RetentionInDays: 3
+      RetentionInDays: 30
       LogGroupName: !Sub /aws/vendedlogs/states/${SFName}-statemachine-logs
         
   StateMachine:

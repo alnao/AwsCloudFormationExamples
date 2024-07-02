@@ -1,7 +1,7 @@
-# AWS CloudFormation Examples by AlNao - 04 Distribuzione CloudFront con WebSite su S3
+# AWS CloudFormation Examples - 04 Distribuzione CloudFront
+AWS CloudFormation Examples by [AlNao](https://www.alnao.it), nel README esterno i prerequisiti come AWS-CLI-SAM. 
 
-Creazione di una distribuzione CloudFront con un sito su S3. Template eseguibile in Console Web di AWS oppure tramite i comandi CLI-SAM.
-
+Creazione di una distribuzione CloudFront con un sito su S3.
 
 ## CloudFormation
 Documentazione di [CloudFront](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-cloudfront-distribution.html)

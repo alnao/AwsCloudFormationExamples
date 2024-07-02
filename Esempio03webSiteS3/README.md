@@ -1,6 +1,7 @@
-# AWS CloudFormation Examples by AlNao - 03 BucketS3 con WebSite
+# AWS CloudFormation Examples - 03 BucketS3 con WebSite
+AWS CloudFormation Examples by [AlNao](https://www.alnao.it), nel README esterno i prerequisiti come AWS-CLI-SAM. 
 
-Creazione di un bucket semplice bucket S3 con il nome parametrico. Esposizione di un sito web con in aggiunta un ```S3::BucketPolicy```. Template eseguibile in Console Web di AWS oppure tramite i comandi CLI-SAM.
+Creazione di un bucket semplice bucket S3 con il nome parametrico. Esposizione di un sito web con in aggiunta un ```S3::BucketPolicy```. 
 
 ## CloudFormation
 Documentazione di [CloudFormation - WebSite configuration](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket-websiteconfiguration.html)

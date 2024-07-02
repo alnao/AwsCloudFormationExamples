@@ -1,5 +1,6 @@
 
-# AWS CloudFormation Examples by AlNao - 01 BucketS3
+# AWS CloudFormation Examples - 01 BucketS3
+AWS CloudFormation Examples by [AlNao](https://www.alnao.it)
 
 ## CloudFormation
 * Documentazione [CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket.html) di Bucket-S3:

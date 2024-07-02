@@ -1,4 +1,5 @@
 # AWS CloudFormation Examples by AlNao - 05 Lambda Function
+AWS CloudFormation Examples by [AlNao](https://www.alnao.it), nel README esterno i prerequisiti come AWS-CLI-SAM. 
 
 Lambda in Python invocata da una "notifica" da un bucket S3. 
 

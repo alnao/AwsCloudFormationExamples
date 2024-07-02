@@ -1,4 +1,4 @@
-# AWS Examples 
+# AWS CloudFormation Examples by AlNao
 
 <p align="center">
     <img src="https://img.shields.io/badge/AWS-%23FF9900?style=plastic&logo=AmazonAWS&logoColor=black" style="height:28px;" />
@@ -12,7 +12,7 @@
     <img src="https://img.shields.io/badge/SQS-%23FF4F8B?style=plastic&logo=amazon-sqs&logoColor=black" style="height:28px;" />
 </p>
 
-AWS Examples by [AlNao](https://www.alnao.it/aws)
+AWS CloudFormation Examples by [AlNao](https://www.alnao.it)
 
 # Prerequisiti
 - Un account AWS attivo
@@ -35,9 +35,10 @@ AWS Examples by [AlNao](https://www.alnao.it/aws)
 - 05 **Lambda**: lambda in Python avviato da una "notifica" da un bucket S3 (senza EventBridge) 
   - nota: *questo esempio non segue le best-practices perchè la lambda è inline dentro al template e non in files dedicati, vedere successivi esempi per lambda in files separati*
 - 06 **EventBridge**: due regole EventBridge (un trigger & una regola cron) per l'invocazioni di Lambda Function in python
+- 07 **Step Function**: definizione di una step function, invocata da un EventBridge-Lambda
+  - la macchina a stati esegue i passi: copia un file da S3 a S3, cancellazione del file originale e esecuzione di una lambda function
 
 ## Esempi in fase di revisione
-- 09 **Step Function**: definizione di una step function, invocata da un EventBridge-Lambda, i passi eseguiti dalla macchina a stati sono: copia un file, cancellazione del file originale e poi esecuzione di una lambda function
 - 10 **Api Gateway**: creazione di un servizio REST, esposto con Api Gateway e Lambda function come back-end
 - 11 **Dynamo**: tabella dynamo con micro-servizi per scrivere e leggere nella tabella (con Api Gateway e Lambda function)
 - 12 **Lambda Authorizer**: esempio tabella dynamo, CRUD in Lambda Function con in aggiunta una Lambda Authorizer per Api Gateway

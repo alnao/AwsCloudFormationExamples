@@ -1,4 +1,7 @@
-# AWS CloudFormation Examples by AlNao - 02 Istanze EC2
+# AWS CloudFormation Examples - 02 Istanze EC2
+AWS CloudFormation Examples by [AlNao](https://www.alnao.it)
+
+Creazione e gestione di istanze EC2 e security groups
 
 ## CloudFormation
 Documentazione [CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-instance.html) di Ec2:
