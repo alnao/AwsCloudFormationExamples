@@ -37,6 +37,8 @@ AWS CloudFormation Examples by [AlNao](https://www.alnao.it)
 - 06 **EventBridge**: due regole EventBridge (un trigger & una regola cron) per l'invocazioni di Lambda Function in python
 - 07 **Step Function**: definizione di una step function, invocata da un EventBridge-Lambda
   - la macchina a stati esegue i passi: copia un file da S3 a S3, cancellazione del file originale e esecuzione di una lambda function
+- 08 **ApiGateway**: definizione di una API di tipo Rest (HTTP-GET) che invoca una lambda *con codice inline*
+  - in questo esempio per la definizione delle API viene usato il tipo ```AWS::ApiGateway::RestApi```
 
 ## Esempi in fase di revisione
 - 10 **Api Gateway**: creazione di un servizio REST, esposto con Api Gateway e Lambda function come back-end

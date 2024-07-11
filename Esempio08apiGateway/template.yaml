@@ -1,5 +1,11 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Esempio di template CloudFormation con API Gateway with a Lambda Integration
+
+Parameters:
+  StageName:
+    Type: String
+    Description: Stage Name
+    Default: dev
 Resources:
   ApiGatewayRestApi:
     Type: AWS::ApiGateway::RestApi
@@ -21,11 +27,11 @@ Resources:
     Properties:
       ApiKeyRequired: false
       AuthorizationType: NONE
-      HttpMethod: POST
+      HttpMethod: GET
       Integration:
         ConnectionType: INTERNET
         Credentials: !GetAtt ApiGatewayIamRole.Arn
-        IntegrationHttpMethod: POST
+        IntegrationHttpMethod: POST #see https://stackoverflow.com/questions/41371970/accessdeniedexception-unable-to-determine-service-operation-name-to-be-authoriz
         PassthroughBehavior: WHEN_NO_MATCH
         TimeoutInMillis: 29000
         Type: AWS_PROXY
@@ -45,7 +51,7 @@ Resources:
       DeploymentId: !Ref ApiGatewayDeployment
       Description: Lambda API Stage v0
       RestApiId: !Ref ApiGatewayRestApi
-      StageName: 'v0'
+      StageName: !Ref StageName #'v0'
   ApiGatewayDeployment:
     Type: AWS::ApiGateway::Deployment
     DependsOn: ApiGatewayMethod
@@ -80,6 +86,7 @@ Resources:
       Code:
         ZipFile: |
           def handler(event, context):
+            print(event)
             response = {
               'isBase64Encoded': False,
               'statusCode': 200,
@@ -88,36 +95,42 @@ Resources:
               'body': 'Hello, World!'
             }
             return response          
-      Description: AWS Lambda function
-      FunctionName: 'lambda-function'
+      Description: AWS Lambda function called by Api gateway 
+      FunctionName: 'lambda-es08-apigaway'
       Handler: index.handler
       MemorySize: 256
       Role: !GetAtt LambdaIamRole.Arn
-      Runtime: python3.7
+      Runtime: python3.11
       Timeout: 60
   LambdaIamRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: 2012-10-17
         Statement:
           - Effect: Allow
-            Action:
-              - 'logs:CreateLogGroup'
-              - 'logs:CreateLogStream'
-              - 'logs:PutLogEvents'
-            Resource: 'arn:aws:logs:*:*:*'
-          - Effect: 'Allow'
             Principal:
               Service:
-                - 'lambda.amazonaws.com'
+                - lambda.amazonaws.com
             Action:
               - 'sts:AssumeRole'
-      Path: '/'
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource: 'arn:aws:logs:*:*:*'
+
 Outputs:
   StackName:
     Description: Deployed StackName for update
     Value: !Ref AWS::StackName
-#  APIEndPoint:
-#    Description: Endpoint URL API REST
-#    Value: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Stage}
+  APIEndPoint:
+    Description: Endpoint URL API REST
+    Value: !Sub https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}/lambda
