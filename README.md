@@ -39,10 +39,9 @@ AWS CloudFormation Examples by [AlNao](https://www.alnao.it)
   - la macchina a stati esegue i passi: copia un file da S3 a S3, cancellazione del file originale e esecuzione di una lambda function
 - 08 **ApiGateway**: definizione di una API di tipo Rest (HTTP-GET) che invoca una lambda *con codice inline*
   - in questo esempio per la definizione delle API viene usato il tipo ```AWS::ApiGateway::RestApi```
+- 09 **Dynamo**: tabella dynamo con API per scrivere e leggere nella tabella (Api Gateway e Lambda function)
 
 ## Esempi in fase di revisione
-- 10 **Api Gateway**: creazione di un servizio REST, esposto con Api Gateway e Lambda function come back-end
-- 11 **Dynamo**: tabella dynamo con micro-servizi per scrivere e leggere nella tabella (con Api Gateway e Lambda function)
 - 12 **Lambda Authorizer**: esempio tabella dynamo, CRUD in Lambda Function con in aggiunta una Lambda Authorizer per Api Gateway
 - 13 **Lambda Application S3-Utils**: lambda application con lambda function per gestire contenuti S3 (api get, presigned url, excel2csv, unzip, uploader), il template uploader prevede anche un topic-SNS
 - 14 **RDS**: creazione di un database MySql con un SecurityGroup dedicato alle regole di accesso

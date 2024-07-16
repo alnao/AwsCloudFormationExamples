@@ -1,4 +1,4 @@
-# AWS CloudFormation Examples by AlNao - 06 EventBridge
+# AWS CloudFormation Examples by AlNao - 08 ApiGateway
 AWS CloudFormation Examples by [AlNao](https://www.alnao.it), nel README esterno i prerequisiti come AWS-CLI-SAM. 
 
 Esempio di template CloudFormation per creare una API di tipo Rest che invoca una lambda function che ritorna una costante.

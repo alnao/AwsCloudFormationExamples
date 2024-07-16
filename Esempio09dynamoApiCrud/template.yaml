@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Esempio di template CloudFormation con tabella Dynamo e CRUD sviluppato con Lambda Function ed esposto con API Manager (AWS::Serverless::Api)
+Description: AWS CloudFormation Examples by AlNao - 09 abella Dynamo e CRUD sviluppato con Lambda Function ed esposto con API Manager (AWS::Serverless::Api)
 # nota nel template c'è anche un Bucket S3 e un trigger che carica dati sulla tabella Dynamo
 
 # see
@@ -23,11 +23,11 @@ Parameters:
   BucketName:
     Type: String
     Description: Nome del bucket
-    Default: alberto-input-es11
+    Default: alberto-bucket-es09
   DynamoName:
     Type: String
     Description: Nome del DB dynamo
-    Default: dynamo-es11
+    Default: alberto-dynamo-es09
   FilePattern:
     Type: String
     Default: INPUT
@@ -72,13 +72,14 @@ Resources:
     Properties:
       CodeUri: lambda
       Handler: csv_to_dynamo.entrypoint
-      Runtime: python3.8
+      Runtime: python3.11
       MemorySize: 128
       Environment: 
         Variables:
           DynamoName: !Ref DynamoName
       Role: !GetAtt LambdaIAMRole.Arn
       Timeout: 500
+      FunctionName: 'lambda-es09-csv'
 
   TriggerExternalPy:
     Type: AWS::Events::Rule
@@ -193,8 +194,9 @@ Resources:
       CacheClusterEnabled: false
       CacheClusterSize: '0.5'
       Cors:
+        # AllowCredentials: true # Unable to add Cors configuration because 'AllowCredentials' can not be true when 'AllowOrigin' is "'*'" or not set
         AllowMethods: "'POST, GET, DELETE, OPTIONS'"
-        AllowOrigins: "'*'"
+        AllowOrigin: "'*'" #occhio che AllowOrigin va senza S finale https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-api-corsconfiguration.html
         AllowHeaders: "'*'"
         MaxAge: "'600'"
       MethodSettings:
@@ -225,12 +227,13 @@ Resources:
               Ref: ApiGateway
       CodeUri: lambda
       Handler: dynamo_crud.get_handler
-      Runtime: python3.8
+      Runtime: python3.11
       MemorySize: 128
       Environment: 
         Variables:
           DynamoName: !Ref DynamoName
       Timeout: 500
+      FunctionName: 'lambda-es09-get'
 
   ApiPostFunction:
     Type: AWS::Serverless::Function
@@ -246,12 +249,13 @@ Resources:
               Ref: ApiGateway
       CodeUri: lambda
       Handler: dynamo_crud.post_handler
-      Runtime: python3.8
+      Runtime: python3.11
       MemorySize: 128
       Environment: 
         Variables:
           DynamoName: !Ref DynamoName
       Timeout: 500
+      FunctionName: 'lambda-es09-post'
 
   ApiDeleteFunction:
     Type: AWS::Serverless::Function
@@ -267,12 +271,13 @@ Resources:
               Ref: ApiGateway
       CodeUri: lambda
       Handler: dynamo_crud.delete_handler
-      Runtime: python3.8
+      Runtime: python3.11
       MemorySize: 128
       Environment: 
         Variables:
           DynamoName: !Ref DynamoName
       Timeout: 500
+      FunctionName: 'lambda-es09-delete'
 
 Outputs:
   StackName:

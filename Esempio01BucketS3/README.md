@@ -10,6 +10,12 @@ AWS CloudFormation Examples by [AlNao](https://www.alnao.it)
   Properties:
       BucketName: !Ref NomeBucket
   ```
+* Se si vuole usare il servizio S3 assieme ad EventBridge per catturare gli eventi, bisogna controllare nel bucket S3 la configurazione su Proprietà --> Amazon EventBridge. Senza questa configurazione non vengono eseguiti i trigger di EventBridge senza nessun messaggio di errore. E' possibile aggiungere la proprietà specifica nei template di CloudFormation:
+    ```
+      NotificationConfiguration:
+        EventBridgeConfiguration:
+          EventBridgeEnabled: true
+    ```
 * Comandi per la creazione dello stack
   ```
   sam validate
@@ -31,6 +37,7 @@ AWS CloudFormation Examples by [AlNao](https://www.alnao.it)
   ```
   sam delete --stack-name aws01-bucket-s3
   ```
+
 
 ## Comandi CLI
 * Documentazione [CLI](https://awscli.amazonaws.com/v2/documentation/api/latest/reference/s3/cp.html)
