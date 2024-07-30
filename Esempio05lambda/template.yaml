@@ -50,7 +50,7 @@ Resources:
             return {'statusCode': 200 , 'body': 'OK'}
       Handler: index.lambda_handler
       Role: !GetAtt LambdaIAMRole.Arn
-      Runtime: python3.9
+      Runtime: python3.11
       Timeout: 5
   LambdaInvokePermission:
     Type: 'AWS::Lambda::Permission'

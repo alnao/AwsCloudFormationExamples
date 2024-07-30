@@ -43,14 +43,14 @@ Documentazione di [event bridge](https://docs.aws.amazon.com/AWSCloudFormation/l
     sam validate
     sam build
     sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket formazione-alberto
-    sam deploy --template-file .\packagedV1.yaml --stack-name Esempio06eventBridge --capabilities CAPABILITY_IAM
+    sam deploy --template-file packagedV1.yaml --stack-name Esempio06eventBridge --capabilities CAPABILITY_IAM
     ```
     - nota: il parametro ```--capabilities CAPABILITY_IAM``` è obbligatorio per la gestione delle regole IAM con template CloudFormation, vedere la [documentazione ufficiale](https://repost.aws/knowledge-center/cloudformation-objectownership-acl-error)
 * Comando caricamento file di prova e verifica esecuzione lambda
     ```
-    aws s3 cp ../Esempio05lambda/prova.csv s3://formazione-alberto/INPUT/prova.csv
+    aws s3 cp ../Esempio05lambda/prova.csv s3://formazione-sftp-simulator/INPUT/prova.csv
     sam logs --stack-name Esempio06eventBridge
-    aws s3 ls s3://formazione-applicazione/OUTPUT/
+    aws s3 ls s3://formazione-alberto/OUTPUT/
     ```
 * Comandi per la distruzione dello stack con cancellazione del bucket
     ```

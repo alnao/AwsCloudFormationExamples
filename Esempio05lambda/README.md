@@ -26,7 +26,7 @@ Documentazione di [lambda-function](https://docs.aws.amazon.com/AWSCloudFormatio
     aws s3 cp prova.csv s3://esempio04s3notifica/
     aws s3 ls s3://esempio04s3notifica/
     aws cloudwatch get-metric-statistics --cli-input-json file://cloudwatch-get-stats.json --query Datapoints[].[Timestamp,SampleCount] --output table
-    aws logs filter-log-events --log-group-name "/aws/lambda/esempio04-S3Notification-XuE5shURUFvH" --query events[].[timestamp,message] --output text
+    aws logs filter-log-events --log-group-name "/aws/lambda/esempio04-S3Notification-qjayNPwcruwY" --query events[].[timestamp,message] --output text
     ```
 * Comandi per la distruzione dello stack con cancellazione del bucket
     ```
@@ -38,8 +38,8 @@ Documentazione di [lambda-function](https://docs.aws.amazon.com/AWSCloudFormatio
 * Documentazione [CLI Lambda](https://awscli.amazonaws.com/v2/documentation/api/latest/reference/cloudfront/index.html)
 * Recupero lista delle lambda e dettaglio di una lambda
     ```
-    aws lambda list-functions --query Functions[].FunctionName --output text --filter esempio04
-    aws lambda   get-function --function-name esempio04-S3Notification-XuE5shURUFvH
+    aws lambda list-functions --query Functions[].FunctionName --output table
+    aws lambda   get-function --function-name esempio04-S3Notification-qjayNPwcruwY
     ```    
 * Creazione di una lambda
     ```

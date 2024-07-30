@@ -99,7 +99,7 @@ Resources:
             Method: get
             RestApiId:
               Ref: ApiGateway
-      Runtime: python3.8
+      Runtime: python3.11
       CodeUri: lambda
       Handler: api.entrypoint_list
       MemorySize: 525
@@ -120,7 +120,7 @@ Resources:
             Method: get
             RestApiId:
               Ref: ApiGateway
-      Runtime: python3.8
+      Runtime: python3.11
       CodeUri: lambda
       Handler: api.entrypoint_get_txt
       MemorySize: 525
@@ -141,7 +141,7 @@ Resources:
             Method: post
             RestApiId:
               Ref: ApiGateway
-      Runtime: python3.8
+      Runtime: python3.11
       CodeUri: lambda
       Handler: api.entrypoint_post_txt
       MemorySize: 525
@@ -162,7 +162,7 @@ Resources:
             Method: get
             RestApiId:
               Ref: ApiGateway
-      Runtime: python3.8
+      Runtime: python3.11
       CodeUri: lambda
       Handler: api.entrypoint_get_presigned_url
       MemorySize: 525

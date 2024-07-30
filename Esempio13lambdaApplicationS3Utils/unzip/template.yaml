@@ -57,7 +57,7 @@ Resources:
     Properties:
       CodeUri: lambda
       Handler: unzip.lambda_handler
-      Runtime: python3.8
+      Runtime: python3.11
       MemorySize: 1280
       Timeout: 900
       Environment: 

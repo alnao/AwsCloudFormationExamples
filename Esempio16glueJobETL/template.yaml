@@ -134,7 +134,7 @@ Resources:
     Properties:
       CodeUri: lambda
       Handler: startProcess.entrypoint
-      Runtime: "python3.10"
+      Runtime: python3.11
       MemorySize: 512
       Timeout: 300
       Environment: 
@@ -291,7 +291,7 @@ Resources:
     Properties:
       CodeUri: lambda
       Handler: excel2csv.lambda_handler
-      Runtime: "python3.10"
+      Runtime: python3.11
       MemorySize: 1280
       Timeout: 900
       Environment: 

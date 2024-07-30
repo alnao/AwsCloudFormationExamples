@@ -84,7 +84,7 @@ Resources:
     Properties:
       CodeUri: lambda
       Handler: csv_to_dynamo.entrypoint
-      Runtime: python3.8
+      Runtime: python3.11
       MemorySize: 128
       Environment: 
         Variables:
@@ -249,7 +249,7 @@ Resources:
               Ref: ApiGateway
       CodeUri: lambda
       Handler: dynamo_crud.get_handler
-      Runtime: python3.8
+      Runtime: python3.11
       MemorySize: 128
       Environment: 
         Variables:
@@ -270,7 +270,7 @@ Resources:
               Ref: ApiGateway
       CodeUri: lambda
       Handler: dynamo_crud.post_handler
-      Runtime: python3.8
+      Runtime: python3.11
       MemorySize: 128
       Environment: 
         Variables:
@@ -291,7 +291,7 @@ Resources:
               Ref: ApiGateway
       CodeUri: lambda
       Handler: dynamo_crud.delete_handler
-      Runtime: python3.8
+      Runtime: python3.11
       MemorySize: 128
       Environment: 
         Variables:
@@ -301,11 +301,11 @@ Resources:
   LambdaAuthorizer: 
     Type: AWS::Serverless::Function
     Properties:
-      Runtime: python3.8
+      Runtime: python3.11
       Role: !GetAtt LambdaAuthorizerIAMRole.Arn
       CodeUri: lambda
       Handler: authJwt.entrypoint
-      Runtime: python3.8
+      Runtime: python3.11
       MemorySize: 512
       Timeout: 900
       Environment: 
@@ -358,7 +358,7 @@ Resources:
               Ref: ApiLoginGateway
       CodeUri: lambda
       Handler: login.login_handler
-      Runtime: python3.8
+      Runtime: python3.11
       MemorySize: 128
       Environment: 
         Variables:

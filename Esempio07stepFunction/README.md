@@ -34,20 +34,21 @@ Documentazione di [step function](https://docs.aws.amazon.com/AWSCloudFormation/
     sam validate
     sam build
     sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket formazione-alberto
-    sam deploy --template-file .\packagedV1.yaml --stack-name Esempio07stepFunction --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND
+    sam deploy --template-file packagedV1.yaml --stack-name Esempio07stepFunction --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND
 
     ```
     - nota: il parametro ```--capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND``` è obbligatorio per la gestione delle regole IAM con template CloudFormation, vedere la [documentazione ufficiale](https://repost.aws/knowledge-center/cloudformation-objectownership-acl-error)
 
 * Comando caricamento file di prova e verifica esecuzione lambda
     ```
-    aws s3 cp ../Esempio05lambda/prova.csv s3://formazione-sftp-simulator/INPUT/
-    aws s3 ls s3://formazione-sftp-simulator/INPUT/
+    aws s3 cp ../Esempio05lambda/prova.csv s3://formazione-sftp-simulator/INPUT/provaEs07.csv
     aws s3 ls s3://formazione-alberto/OUTPUT/
 
     aws stepfunctions list-executions --state-machine-arn arn:aws:states:eu-west-1:xxx:stateMachine:smEsempio07 --output table  --query executions[*].[status,startDate,stopDate]
 
     aws logs filter-log-events --log-group-name /aws/lambda/Esempio07stepFunction-Process-xxxxx
+
+    sam logs --stack-name Esempio07stepFunction
     ```
 
 * Comandi per la distruzione dello stack

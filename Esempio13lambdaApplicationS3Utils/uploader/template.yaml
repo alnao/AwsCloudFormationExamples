@@ -200,7 +200,7 @@ Resources:
             Method: get
             RestApiId:
               Ref: APIGateway
-      Runtime: python3.8
+      Runtime: python3.11
       CodeUri: lambda
       Handler: list.handler
       MemorySize: 525
@@ -221,7 +221,7 @@ Resources:
             Method: options
             RestApiId:
               Ref: APIGateway
-      Runtime: python3.8
+      Runtime: python3.11
       CodeUri: lambda
       Handler: list.handlerOptions
       MemorySize: 525
@@ -241,7 +241,7 @@ Resources:
             Method: post
             RestApiId:
               Ref: APIGateway
-      Runtime: python3.8
+      Runtime: python3.11
       CodeUri: lambda
       Handler: uploader.handler
       MemorySize: 525
@@ -264,7 +264,7 @@ Resources:
   LambdaAuthorizer: 
     Type: AWS::Serverless::Function
     Properties:
-      Runtime: python3.8
+      Runtime: python3.11
       Role: !GetAtt APIRole.Arn
       CodeUri: lambda
       Handler: authJwt.entrypoint
