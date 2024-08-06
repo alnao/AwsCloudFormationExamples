@@ -8,7 +8,8 @@ import os
 import base64
 import datetime #from datetime import datetime
 
-JwtKey = os.environ['JwtKey'] 
+#JwtKey = os.environ['JwtKey'] 
+SmmJwtSecret = os.environ['SmmJwtSecret'] 
 headers= {"Access-Control-Allow-Headers" : "*","Access-Control-Allow-Origin": "*","Access-Control-Allow-Methods": "OPTIONS,POST,GET,DELETE"}
 
 #see https://gist.github.com/bendog/44f21a921f3e4282c631a96051718619
@@ -21,6 +22,6 @@ def login_handler(event,context):
     print(token)
     username=token.split(':')[0]
     payload={'user':username,'authorities':['ROLE_USER'] , "exp":datetime.datetime.now() + datetime.timedelta(seconds=3600)}
-    encoded_jwt = jwt.encode(payload, JwtKey, algorithm="HS256")
+    encoded_jwt = jwt.encode(payload, SmmJwtSecret, algorithm="HS256")
     print(encoded_jwt)
     return {'body': json.dumps(encoded_jwt), 'statusCode': 200, 'headers' : headers }

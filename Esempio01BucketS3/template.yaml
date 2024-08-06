@@ -8,7 +8,7 @@ Parameters:
   NomeBucket:
     Type: String
     Default: esempio01-bucket-s3
-    Description: Nome del bucket
+    Description: 'Nome del bucket S3 da creare'
     MinLength: 9
 #blocco Risorse
 Resources:
@@ -16,10 +16,23 @@ Resources:
     Type: 'AWS::S3::Bucket'
     Properties:
       BucketName: !Ref NomeBucket
+      AccessControl: Private
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      NotificationConfiguration:
+        EventBridgeConfiguration:
+          EventBridgeEnabled: true
 #blocco Outputs
 Outputs:
-  S3Bucket:
-    Value: !GetAtt S3Bucket.Arn
+  BucketName:
+    Value: !Ref S3Bucket
+    Description: 'Nome del bucket S3 creato'
+  BucketARN:
+    Value: !GetAtt 'S3Bucket.Arn'
     Description: S3 bucket ARN
   StackName:
     Description: Deployed StackName for update

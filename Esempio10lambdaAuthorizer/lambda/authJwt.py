@@ -1,9 +1,11 @@
 import json
 import jwt
 import os
+import boto3
 #from datetime import datetime
 
-JwtKey = os.environ['JwtKey'] 
+#JwtKey = os.environ['JwtKey'] 
+SmmJwtSecret = os.environ['SmmJwtSecret'] 
 
 def entrypoint(event, context):
     print("Lambda auth: " + json.dumps(event))
@@ -11,10 +13,14 @@ def entrypoint(event, context):
     methodArn=''
     try:
         methodArn=event['methodArn']
-        token = ''+event['headers']['Authorization']
-        token = token.replace('Bearer ','')
+        token = event.get('authorizationToken')
+        #token = ''+event['headers']['Authorization'] #questa è la versione alternativa con FunctionPayloadType: REQUEST, vedi template
+        #token = token.replace('Bearer ','')
         print ("pre decoded:" + token)
-        decoded = jwt.decode(token, JwtKey, algorithms=['HS256'])
+        ssm = boto3.client('ssm')
+        parameter = ssm.get_parameter(Name=SmmJwtSecret, WithDecryption=True)
+        jwt_secret = parameter['Parameter']['Value']
+        decoded = jwt.decode(token, jwt_secret, algorithms=['HS256'])
         print ( decoded)
     except Exception as e: 
         print(e)

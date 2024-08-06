@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Esempio di template CloudFormation con creazione di due regole EventBridge per eseguire due Lambda Function
+Description: AWS CloudFormation Examples by AlNao - 06 Due regole EventBridge per eseguire due Lambda Function
 
 Parameters:
   SourceBucket:

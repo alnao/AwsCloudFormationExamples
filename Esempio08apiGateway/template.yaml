@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Esempio di template CloudFormation con API Gateway with a Lambda Integration
+Description: AWS CloudFormation Examples by AlNao - 08 API Gateway per esporre un servizio REST con Lambda
 
 Parameters:
   StageName:

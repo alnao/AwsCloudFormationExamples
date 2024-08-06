@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Esempio di template CloudFormation con tabella Dynamo e CRUD sviluppato con Lambda Function ed esposto con API Manager (AWS::Serverless::Api)
-# copia del Esempio11dynamoApiCrud con in aggiunta la Lambda Authorizer di API Gateway
+Description: AWS CloudFormation Examples by AlNao - 10 Lambda Authorizer (con Dynamo e Crud)
+# copia del Esempio09DynamoApiCrud con in aggiunta la Lambda Authorizer di API Gateway
 # nota: nel template c'è anche un Bucket S3 e un trigger che carica dati sulla tabella Dynamo
 # nota: nel template al Api Gatewat c'è un Lambda Authorizer che valida un token JWT, la password è in chiaro, NON è buona norma!
 
@@ -29,24 +29,35 @@ Parameters:
   BucketName:
     Type: String
     Description: Nome del bucket
-    Default: es12-lambda-auth
+    Default: es10-lambda-auth
   DynamoName:
     Type: String
     Description: Nome del DB dynamo
-    Default: dynamo-es12
+    Default: dynamo-es10
   FilePattern:
     Type: String
     Default: INPUT
   Stage:
     Type: String
     Default: dev
-  JwtKey:
+  PasswordParam:
     Type: String
-    Description: Jwt Key
-    Default: Password.1234
-    #NOTA: la password in chiaro non è buona norma, TODO: salvare il parametro cryptato!
+    NoEcho: true #così la password non è in chiaro mai!
+    Description: Password da memorizzare in SSM
+  SmmJwtSecretName:
+    Type: String
+    Description: Nome del parametro SSM jwt-secret
+    Default: '/alnao-example/jwt-secret'
 
 Resources:
+  JWTSecretParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Ref SmmJwtSecretName
+      Type: String #'SecureString' is not supported #https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ssm-parameter.html#cfn-ssm-parameter-type
+      Value: !Ref PasswordParam
+      Description: Segreto JWT per la validazione del token
+
   Dynamo:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -165,6 +176,7 @@ Resources:
                   - 'logs:PutLogEvents'
                 Resource: 'arn:aws:logs:*:*:*'
 
+
   APIRole:
     Type: AWS::IAM::Role
     Properties:
@@ -229,7 +241,8 @@ Resources:
         AddDefaultAuthorizerToCorsPreflight: false
         Authorizers:
           MyLambdaRequestAuthorizer:
-            FunctionPayloadType: REQUEST
+            Type: TOKEN 
+            #FunctionPayloadType: REQUEST #alternativa al Type: TOKEN , vedere codice della lambda auth
             FunctionArn: !GetAtt LambdaAuthorizer.Arn
             Identity:
               Headers:
@@ -310,7 +323,7 @@ Resources:
       Timeout: 900
       Environment: 
         Variables:
-          JwtKey: !Ref JwtKey
+          SmmJwtSecret: !Ref SmmJwtSecretName #JwtKey: !Ref JwtKey
       Description: LambdaAuthorizer
   LambdaAuthorizerPermission:
     Type: AWS::Lambda::Permission
@@ -343,6 +356,10 @@ Resources:
                   - 'logs:CreateLogStream'
                   - 'logs:PutLogEvents'
                 Resource: 'arn:aws:logs:*:*:*'
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${SmmJwtSecretName}'
 #API LOGIN
   ApiLoginFunction:
     Type: AWS::Serverless::Function
@@ -362,7 +379,7 @@ Resources:
       MemorySize: 128
       Environment: 
         Variables:
-          JwtKey: !Ref JwtKey
+          SmmJwtSecret: !Ref SmmJwtSecretName #JwtKey: !Ref JwtKey
       Timeout: 500
   ApiLoginGateway:
     Type: AWS::Serverless::Api

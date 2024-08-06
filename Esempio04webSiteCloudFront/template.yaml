@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: AWS CloudFormation Examples by AlNao - 03 CloudFront e WebSite
+Description: AWS CloudFormation Examples by AlNao - 04 CloudFront e WebSite
 #ßee https://gist.github.com/jonoirwinrsa/ceb2cba3d104720320f30e06b8c821f8
 #ßee https://blog.canopas.com/deploy-a-website-with-aws-s3-cloudfront-using-cloudformation-c2199dc6c435
 #ßee https://s3.amazonaws.com/solution-builders-us-east-1/amazon-cloudfront-secure-static-site/v0.11/c12fa047700b6237e6a8e74b6ec6050b.template

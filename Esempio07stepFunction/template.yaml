@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Esempio di template CloudFormation per un processo che S3 -> Trigger -> Lambda -> Step Function -> Lambda
+Description: AWS CloudFormation Examples by AlNao - 07 Step Functioni invocata da EventBridge e Lambda
 
 # Promemoria:
 # Nel bucket sorgente deve essere attivata (manualmente) la proprietà EventBridgeConfiguration: EventBridgeEnabled: true

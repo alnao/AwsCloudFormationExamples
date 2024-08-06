@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: AWS CloudFormation Examples by AlNao - 04 Lambda Python invocata da una notifica da S3
+Description: AWS CloudFormation Examples by AlNao - 05 Lambda function in Python invocata da una notifica da S3
 # nota: questo esempio non segue best-practices: notifiche da S3 senza usare EventBridge e codice inline (tecniche da evitare)
 
 Parameters:

@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: AWS CloudFormation Examples by AlNao - 09 abella Dynamo e CRUD sviluppato con Lambda Function ed esposto con API Manager (AWS::Serverless::Api)
+Description: AWS CloudFormation Examples by AlNao - 09 Tabella Dynamo e servizi API gestiti con il tipo AWS::Serverless::Api
 # nota nel template c'è anche un Bucket S3 e un trigger che carica dati sulla tabella Dynamo
 
 # see
