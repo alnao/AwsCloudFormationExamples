@@ -1,0 +1,679 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Template CloudFormation per gestire componenti AWS
+
+Parameters:
+  ApiStageName:
+    Type: String
+    Default: "dev"
+    Description: "Nome dello stage per l'API Gateway"
+  StateTrigger:
+    Type: String
+    Default: "ENABLED"
+    AllowedValues:
+      - "ENABLED"
+      - "DISABLED"
+
+  BucketName:
+    Type: String
+    Default: "es12-application"
+  InputFolderName:
+    Type: String
+    Default: "INPUT"
+  DezippedFolderName:
+    Type: String
+    Default: "DEZIPPED"
+  CsvFolderName:
+    Type: String
+    Default: "CSV"
+  ZipFileExtension:
+    Type: String
+    Default: "zip"
+  ExcelFileExtension:
+    Type: String
+    Default: "xlsx"
+  CsvFileExtension:
+    Type: String
+    Default: "csv"
+
+  DynamoTableName:
+    Type: String
+    Default: "es12-log"
+
+  RDSDatabaseName:
+    Type: String
+    Default: "es12db"
+    AllowedPattern: "[a-zA-Z0-9]+"
+  RDSTableName:
+    Type: String
+    Default: "es12table"
+  RDSInstanceClass:
+    Type: String
+    Default: "db.t3.micro"
+    Description: "Classe di istanza RDS"
+  RDSAllocatedStorage:
+    Type: Number
+    Default: 20
+    Description: "Spazio di archiviazione allocato in GB"
+  RDSEngine:
+    Type: String
+    Default: "mysql"
+    AllowedValues:
+      - "mysql"
+      - "postgres"
+#      - aurora-mysql
+#      - aurora-postgresql
+    Description: "Motore del database RDS"
+#  RDSEngineVersion:
+#    Type: String
+#    Default: "8.0.28"
+#    Description: "Versione del motore del database"
+  RDSMasterUsername:
+    Type: String
+    Default: "admin"
+    Description: "Nome utente master per RDS"
+  RDSMasterUserPassword:
+    Type: String
+    NoEcho: true
+    Description: "Password per l'utente master RDS"
+    Default: "superS3cret"
+    MinLength: 8
+    MaxLength: 41
+    AllowedPattern: "[a-zA-Z0-9]+"
+    ConstraintDescription: "deve contenere solo caratteri alfanumerici"
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Default: "YY"
+    Description: "ID del VPC in cui creare il security group RDS"
+    ConstraintDescription: must be the id of an existing VPC
+  Subnet1:
+    Type: String
+    Type: AWS::EC2::Subnet::Id
+    Description: "ID della prima subnet per RDS"
+    ConstraintDescription: must be the id of an existing Subnet.
+  Subnet2:
+    Type: String
+    Type: AWS::EC2::Subnet::Id
+    Description: "ID della seconda subnet per RDS"
+    ConstraintDescription: must be the id of an existing Subnet.
+
+  LambdaRuntime:
+    Type: String
+    Default: "python3.11"
+    Description: "Runtime per le funzioni Lambda"
+  LambdaMemorySize:
+    Type: Number
+    Default: 128
+    Description: "Memoria allocata per le funzioni Lambda (in MB)"
+  LambdaTimeout:
+    Type: Number
+    Default: 30
+    Description: "Timeout per le funzioni Lambda (in secondi)"
+Conditions:
+  IsPostgres: !Equals [!Ref RDSEngine, "postgres"]
+
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      AccessControl: Private
+#      PublicAccessBlockConfiguration:
+#        BlockPublicAcls: False
+#        BlockPublicPolicy: False
+#        IgnorePublicAcls: False
+#        RestrictPublicBuckets: False
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      NotificationConfiguration:
+        EventBridgeConfiguration:
+          EventBridgeEnabled: true
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedMethods: [GET, PUT, POST, DELETE, HEAD]
+            AllowedOrigins: ['*']
+            ExposedHeaders: [ETag]
+            MaxAge: 3000
+
+#  EventBridgeRule:
+#    Type: AWS::Events::Rule
+#    Properties:
+#      Description: "EventBridge rule for triggering Lambda functions"
+#      EventPattern:
+#        source:
+#          - "aws.s3"
+#        detail-type:
+#          - "Object Created"
+#      State: !Ref StateTrigger
+#      Targets:
+#        - Arn: !GetAtt DecompressLambda.Arn
+#          Id: "DecompressLambdaTarget"
+#        - Arn: !GetAtt ConvertToCSVLambda.Arn
+#          Id: "ConvertToCSVLambdaTarget"
+#        - Arn: !GetAtt ProcessCSVLambda.Arn
+#          Id: "ProcessCSVLambdaTarget"
+
+  DecompressZipEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "EventBridge rule to trigger DecompressLambda on ZIP file upload"
+      EventPattern:
+        source:
+          - aws.s3
+        detail-type:
+          - "Object Created"
+        detail:
+          bucket:
+            name:
+              - !Ref S3Bucket
+          object:
+            key:
+              - prefix: !Ref InputFolderName
+            key:
+              - suffix: !Ref ZipFileExtension
+      State: !Ref StateTrigger
+      Targets:
+        - Arn: !GetAtt DecompressLambda.Arn
+          Id: "DecompressLambdaTarget"
+
+  ConvertToCSVEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "EventBridge rule to trigger ConvertToCSVLambda on Excel file creation"
+      EventPattern:
+        source:
+          - aws.s3
+        detail-type:
+          - "Object Created"
+        detail:
+          bucket:
+            name:
+              - !Ref S3Bucket
+          object:
+            key:
+              - prefix: !Ref DezippedFolderName
+            key:
+              - suffix: !Ref ExcelFileExtension
+      State: !Ref StateTrigger
+      Targets:
+        - Arn: !GetAtt ConvertToCSVLambda.Arn
+          Id: "ConvertToCSVLambdaTarget"
+
+  ProcessCSVEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "EventBridge rule to trigger ProcessCSVLambda on CSV file creation"
+      EventPattern:
+        source:
+          - aws.s3
+        detail-type:
+          - "Object Created"
+        detail:
+          bucket:
+            name:
+              - !Ref S3Bucket
+          object:
+            key:
+              - prefix: !Ref CsvFolderName
+            key:
+              - suffix: !Ref CsvFileExtension
+      State: !Ref StateTrigger
+      Targets:
+        - Arn: !GetAtt ProcessCSVLambda.Arn
+          Id: "ProcessCSVLambdaTarget"
+
+  RDSDatabase:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBName: !Ref RDSDatabaseName
+      DBInstanceIdentifier: !Sub "${AWS::StackName}-rds-instance"
+      AllocatedStorage: !Ref RDSAllocatedStorage
+      DBInstanceClass: !Ref RDSInstanceClass
+      Engine: !Ref RDSEngine
+#      EngineVersion: !Ref RDSEngineVersion
+      MasterUsername: !Ref RDSMasterUsername
+      MasterUserPassword: !Ref RDSMasterUserPassword
+      MultiAZ: false
+      PubliclyAccessible: false
+      StorageType: gp2
+      BackupRetentionPeriod: 7
+      DeleteAutomatedBackups: false
+      DeletionProtection: true
+      Port: !If [IsPostgres, 5432, 3306]
+      VPCSecurityGroups: 
+        - !Ref RDSSecurityGroup
+      DBSubnetGroupName: !Ref RDSSubnetGroup
+  RDSSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: "Subnet group for RDS database"
+      SubnetIds: 
+        - !Ref Subnet1
+        - !Ref Subnet2
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-RDSSubnetGroup"
+
+  RDSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Security group for RDS database"
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: !If [IsPostgres, 5432, 3306]
+          ToPort: !If [IsPostgres, 5432, 3306]
+          CidrIp: 0.0.0.0/0  # Nota: In un ambiente di produzione, limitare questo al tuo VPC o IP specifici
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-RDSSecurityGroup"
+
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref DynamoTableName
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+  ApiGatewayCloudWatchRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs'
+  ApiGatewayAccountConfig:
+    Type: 'AWS::ApiGateway::Account'
+    Properties:
+      CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchRole.Arn
+
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    DependsOn: 
+      - ApiGatewayAccountConfig
+      - LambdaExecutionRole
+    Properties:
+      StageName: !Ref ApiStageName
+      Cors:
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          MetricsEnabled: true
+          DataTraceEnabled: true
+          LoggingLevel: INFO
+      CacheClusterEnabled: false
+      DefinitionBody:
+        swagger: "2.0"
+        info:
+          version: "1.0"
+          title: "ES12 API"
+        paths:
+          /read-rds-data:
+            get:
+              x-amazon-apigateway-integration:
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ReadRDSDataLambda.Arn}/invocations"
+                passthroughBehavior: "when_no_match"
+                httpMethod: "POST"
+                type: "aws_proxy"
+          /read-dynamodb-data:
+            get:
+              x-amazon-apigateway-integration:
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ReadDynamoDBDataLambda.Arn}/invocations"
+                passthroughBehavior: "when_no_match"
+                httpMethod: "POST"
+                type: "aws_proxy"
+          /list-excel-files:
+            get:
+              x-amazon-apigateway-integration:
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ListExcelFilesLambda.Arn}/invocations"
+                passthroughBehavior: "when_no_match"
+                httpMethod: "POST"
+                type: "aws_proxy"
+          /download-excel-file:
+            get:
+              x-amazon-apigateway-integration:
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DownloadExcelFileLambda.Arn}/invocations"
+                passthroughBehavior: "when_no_match"
+                httpMethod: "POST"
+                type: "aws_proxy"
+          /upload-zip:
+            get:
+              x-amazon-apigateway-integration:
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UploadZipLambda.Arn}/invocations"
+                passthroughBehavior: "when_no_match"
+                httpMethod: "POST"
+                type: "aws_proxy"
+      TracingEnabled: true
+      AccessLogSetting:
+        DestinationArn: !GetAtt ApiGatewayLogGroup.Arn
+        Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "caller":"$context.identity.caller", "user":"$context.identity.user", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod", "resourcePath":"$context.resourcePath", "status":"$context.status", "protocol":"$context.protocol", "responseLength":"$context.responseLength" }'
+
+  ApiGatewayLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/apigateway/${AWS::StackName}-api-gateway"
+      RetentionInDays: 30
+
+  DecompressLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-decompress-lambda"
+      Handler: decompress_lambda.handler
+      Runtime: !Ref LambdaRuntime
+      MemorySize: !Ref LambdaMemorySize
+      Timeout: !Ref LambdaTimeout
+      CodeUri: ./lambda
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !Ref S3Bucket
+          DEZIPPED_FOLDER_NAME: !Ref DezippedFolderName
+      Role: !GetAtt LambdaExecutionRole.Arn
+
+  ConvertToCSVLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-convert-to-csv-lambda"
+      Handler: convert_to_csv_lambda.handler
+      Runtime: !Ref LambdaRuntime
+      MemorySize: !Ref LambdaMemorySize
+      Timeout: !Ref LambdaTimeout
+      CodeUri: ./lambda
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !Ref S3Bucket
+          CSV_FOLDER_NAME: !Ref CsvFolderName
+      Role: !GetAtt LambdaExecutionRole.Arn
+
+  ProcessCSVLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-process-csv-lambda"
+      Handler: process_csv_lambda_mysql.handler #!If [IsPostgres, process_csv_lambda_postgres.handler, process_csv_lambda_mysql.handler] 
+      Runtime: !Ref LambdaRuntime
+      MemorySize: !Ref LambdaMemorySize
+      Timeout: !Ref LambdaTimeout
+      CodeUri: ./lambda
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !Ref S3Bucket
+          RDS_HOST: !GetAtt RDSDatabase.Endpoint.Address
+          RDS_PORT: !GetAtt RDSDatabase.Endpoint.Port
+          RDS_DATABASE_NAME: !Ref RDSDatabaseName
+          RDS_USERNAME: !Ref RDSMasterUsername
+          RDS_PASSWORD: !Ref RDSMasterUserPassword
+          RDS_TABLE_NAME: !Ref RDSTableName
+          DYNAMO_TABLE_NAME: !Ref DynamoTableName
+      Role: !GetAtt LambdaExecutionRole.Arn
+      VpcConfig:
+        SubnetIds: #devono essere le private?
+          - !Ref Subnet1
+          - !Ref Subnet2
+        SecurityGroupIds:
+          - !Ref RDSSecurityGroup
+
+  ReadRDSDataLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-read-rds-data-lambda"
+      Handler: read_rds_data_lambda.handler
+      Runtime: !Ref LambdaRuntime
+      MemorySize: !Ref LambdaMemorySize
+      Timeout: !Ref LambdaTimeout
+      CodeUri: ./lambda
+      Environment:
+        Variables:
+          RDS_HOST: !GetAtt RDSDatabase.Endpoint.Address
+          RDS_PORT: !GetAtt RDSDatabase.Endpoint.Port
+          RDS_DATABASE_NAME: !Ref RDSDatabaseName
+          RDS_USERNAME: !Ref RDSMasterUsername
+          RDS_PASSWORD: !Ref RDSMasterUserPassword
+          RDS_TABLE_NAME: !Ref RDSTableName
+      Role: !GetAtt LambdaExecutionRole.Arn
+      VpcConfig:
+        SubnetIds: #devono essere le private?
+          - !Ref Subnet1
+          - !Ref Subnet2
+        SecurityGroupIds:
+          - !Ref RDSSecurityGroup
+
+  ReadDynamoDBDataLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-read-dynamodb-data-lambda"
+      Handler: read_dynamodb_data_lambda.handler
+      Runtime: !Ref LambdaRuntime
+      MemorySize: !Ref LambdaMemorySize
+      Timeout: !Ref LambdaTimeout
+      CodeUri: ./lambda
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_NAME: !Ref DynamoTableName
+      Role: !GetAtt LambdaExecutionRole.Arn
+
+  ListExcelFilesLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-list-excel-files-lambda"
+      Handler: list_excel_files_lambda.handler
+      Runtime: !Ref LambdaRuntime
+      MemorySize: !Ref LambdaMemorySize
+      Timeout: !Ref LambdaTimeout
+      CodeUri: ./lambda
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !Ref S3Bucket
+          DEZIPPED_FOLDER_NAME: !Ref DezippedFolderName
+      Role: !GetAtt LambdaExecutionRole.Arn
+
+  DownloadExcelFileLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-download-excel-file-lambda"
+      Handler: download_excel_file_lambda.handler
+      Runtime: !Ref LambdaRuntime
+      MemorySize: !Ref LambdaMemorySize
+      Timeout: !Ref LambdaTimeout
+      CodeUri: ./lambda
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !Ref S3Bucket
+      Role: !GetAtt LambdaExecutionRole.Arn
+
+  UploadZipLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-upload-zip-lambda"
+      Handler: upload_zip_lambda.handler
+      Runtime: !Ref LambdaRuntime
+      MemorySize: !Ref LambdaMemorySize
+      Timeout: !Ref LambdaTimeout
+      CodeUri: ./lambda
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !Ref S3Bucket
+          INPUT_FOLDER_NAME: !Ref InputFolderName
+      Role: !GetAtt LambdaExecutionRole.Arn
+
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaExecutionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                  - s3:ListBucket
+                  - s3:PutObjectAcl
+                Resource:
+                  - !Sub "arn:aws:s3:::${S3Bucket}"
+                  - !Sub "arn:aws:s3:::${S3Bucket}/*"
+              - Effect: Allow
+                Action:
+                  - rds-data:ExecuteStatement
+                  - rds-data:BatchExecuteStatement
+                Resource: !Sub "arn:aws:rds:${AWS::Region}:${AWS::AccountId}:db:${RDSDatabase}"
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource: !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoTableName}"
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:DescribeLogGroups
+                  - logs:DescribeLogStreams
+                Resource: arn:aws:logs:*:*:*
+                #Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*"
+              - Effect: Allow
+                Action: #https://stackoverflow.com/questions/41177965/the-provided-execution-role-does-not-have-permissions-to-call-describenetworkint
+                  - 'ec2:DescribeNetworkInterfaces'
+                  - 'ec2:CreateNetworkInterface'
+                  - 'ec2:DeleteNetworkInterface'
+                  - 'ec2:DescribeInstances'
+                  - 'ec2:AttachNetworkInterface'
+                Resource: '*'
+
+  DecompressLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref DecompressLambda
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt DecompressZipEventRule.Arn
+
+  ConvertToCSVLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ConvertToCSVLambda
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt ConvertToCSVEventRule.Arn
+
+  ProcessCSVLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ProcessCSVLambda
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt ProcessCSVEventRule.Arn
+
+  ReadRDSDataLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ReadRDSDataLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGateway}/*/GET/read-rds-data"
+
+  ReadDynamoDBDataLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ReadDynamoDBDataLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGateway}/*/GET/read-dynamodb-data"
+
+  ListExcelFilesLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ListExcelFilesLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGateway}/*/GET/list-excel-files"
+
+  DownloadExcelFileLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref DownloadExcelFileLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGateway}/*/GET/download-excel-file"
+
+  UploadZipLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref UploadZipLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGateway}/*/GET/upload-zip"
+
+Outputs:
+  ApiGatewayUrl:
+    Description: "URL dell'API Gateway"
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}"
+  S3BucketName:
+    Description: "Nome del bucket S3"
+    Value: !Ref S3Bucket
+  RDSEndpoint:
+    Description: "Endpoint del database RDS"
+    Value: !GetAtt RDSDatabase.Endpoint.Address
+  RDSPort:
+    Description: "Porta del database RDS"
+    Value: !GetAtt RDSDatabase.Endpoint.Port
+# Tolti perchè non servono a nulla
+#  DecompressLambdaArn:
+#    Description: "ARN della Lambda di decompressione"
+#    Value: !GetAtt DecompressLambda.Arn
+#  ConvertToCSVLambdaArn:
+#    Description: "ARN della Lambda di conversione in CSV"
+#    Value: !GetAtt ConvertToCSVLambda.Arn
+#  ProcessCSVLambdaArn:
+#    Description: "ARN della Lambda di processamento CSV"
+#    Value: !GetAtt ProcessCSVLambda.Arn
+#  ReadRDSDataLambdaArn:
+#    Description: "ARN della Lambda per leggere dati da RDS"
+#    Value: !GetAtt ReadRDSDataLambda.Arn
+#  ReadDynamoDBDataLambdaArn:
+#    Description: "ARN della Lambda per leggere dati da DynamoDB"
+#    Value: !GetAtt ReadDynamoDBDataLambda.Arn
+#  ListExcelFilesLambdaArn:
+#    Description: "ARN della Lambda per elencare i file Excel"
+#    Value: !GetAtt ListExcelFilesLambda.Arn
+#  DownloadExcelFileLambdaArn:
+#    Description: "ARN della Lambda per scaricare un file Excel"
+#    Value: !GetAtt DownloadExcelFileLambda.Arn
+#  UploadZipLambdaArn:
+#    Description: "ARN della Lambda per caricare file ZIP"
+#    Value: !GetAtt UploadZipLambda.Arn

@@ -1,0 +1,8 @@
+pyjwt
+pandas
+#psycopg2-binary==2.9.9
+boto3==1.18.65
+#boto3
+#pymysql
+mysql-connector-python==8.0.26
+openpyxl

@@ -40,12 +40,16 @@ AWS CloudFormation Examples by [AlNao](https://www.alnao.it)
 - 08 **ApiGateway**: definizione di una API di tipo Rest (HTTP-GET) che invoca una lambda *con codice inline*
   - in questo esempio per la definizione delle API viene usato il tipo ```AWS::ApiGateway::RestApi```
 - 09 **Dynamo**: tabella dynamo con API per scrivere e leggere nella tabella (Api Gateway e Lambda function)
+- 10 **Lambda Authorizer**: esempio tabella dynamo, CRUD in Lambda Function con in aggiunta una Lambda Authorizer per Api Gateway
+- 11 **RDS**: creazione di un database MySql e un database Aurora con un SecurityGroup dedicato per le regole di accesso
+- 12 **Application S3-Utils**: mini-applicazione che permette di caricare un file excel in un database RDS
+  - database RDS come base dati
+  - bucket S3 come storage dei files
+  - lambda di estrazione ZIP, conversione da excel a csv e caricamento dati nel database
+  - api gateway per recupero dati dal databse e caricamento file nel bucket tramite **presigned url** di tipo PUT
+  - tabella Dynamo per la gestione dei log di caricamenti
 
 ## Esempi in fase di revisione
-- 12 **Lambda Authorizer**: esempio tabella dynamo, CRUD in Lambda Function con in aggiunta una Lambda Authorizer per Api Gateway
-- 13 **Lambda Application S3-Utils**: lambda application con lambda function per gestire contenuti S3 (api get, presigned url, excel2csv, unzip, uploader), il template uploader prevede anche un topic-SNS
-- 14 **RDS**: creazione di un database MySql con un SecurityGroup dedicato alle regole di accesso
-- 15 **Lambda Java**: AWS function sviluppata in linguaggio java e compilata con maven
 - 16 **Job Glue**: definizione Job ETL Glue e una step function che esegue logiche per l'invocazione del Job
 - 17 **Elastic IP**: definizione di un indirizzo IP con Elastic IP assegnato ad una EC2 creata con l'esempio 02
 - 18 **SQS**: definizione di una coda SQS e due Lambda-API producer e consumer
@@ -103,8 +107,16 @@ Facendo riferimento alla [documentazione ufficiale](https://docs.aws.amazon.com/
 	- AWS::StackName
 	- AWS::NotificationARNs
 	- AWS::NoValue
-  Esempio di utilizzo nel output
+  Esempio di utilizzo:
   ```
+  ...
+      Resource: !Sub "arn:aws:rds:${AWS::Region}:${AWS::AccountId}:db:${RDSDatabase}"
+  ...
+      Tags:
+        -
+          Key: StackId
+          Value: !Ref AWS::StackId
+  ...
   StackName:
     Description: Deployed StackName for update
     Value: !Ref AWS::StackName
@@ -162,6 +174,36 @@ Facendo riferimento alla [documentazione ufficiale](https://docs.aws.amazon.com/
         - - |
       ```
 	- Fn::Join
+      ```
+      UserData: !Base64 
+        'Fn::Join':
+          - ''
+          - - |
+              #!/bin/bash -xe
+            - |  #nota non serve il sudo per questo, non so il motivo
+              yum update -y aws-cfn-bootstrap
+            - |+ # nota: non cancellare questa riga vuota che serve per andare a capo nel user-data
+
+            - 'sudo /opt/aws/bin/cfn-init -v '
+            - '         --stack '
+            - !Ref 'AWS::StackName'
+            - '         --resource LaunchConfig ' #nota: corretto che qua sia LaunchConfig e non WebServerGroup
+            - '         --configsets wordpress_install '
+            - '         --region '
+            - !Ref 'AWS::Region'
+            - |+ #nota: la riga successiva deve essere vuota per formato yaml corretto
+
+            - |
+              sudo yum install -y amazon-efs-utils
+              sudo mkdir /mnt/efs
+              sudo chmod 777 /mnt/efs 
+            - 'sudo mount -t efs -o tls '
+            - !Ref EFSFileSystemId
+            - ':/ /mnt/efs '
+            - |+ # nota: non cancellare questa riga vuota che serve per andare a capo nel user-data
+
+
+      ```
 	- Fn::Sub
 	- Fn::ForEach
 	- Fn::ToJsonString
