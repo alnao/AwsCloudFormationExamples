@@ -5,11 +5,11 @@ Description: Esporta documenti da EPC verso BOX
 Parameters:
   SFName:
     Type: String
-    Default: sfEsempio16glueJobETL
+    Default: sfEs13glueJob
   Bucket:
     Type: String
     Description: Bucket di appoggio per l'import
-    Default: alberto-input
+    Default: formazione-alberto
   FilePattern:
     Type: String
     Description: Pattern di partenza di excel
@@ -20,10 +20,12 @@ Parameters:
     Default: lista.csv
   SourcePath:
     Type: String
+    Description: Path del file excel
     Default: INPUT/excel
   DestCsvPath:
     Type: String
-    Default: INPUT/listaPratiche
+    Description: Path di appoggio
+    Default: INPUT/lista
   DestPath:
     Type: String
     Default: OUTPUT/esiti
@@ -40,7 +42,7 @@ Resources:
   GlueProcess: #see https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/AWS_Glue.html
     Type: AWS::Glue::Job #https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-glue-job.html
     Properties:
-      Name: esempio16-glue-job-etl
+      Name: esempio13-glue-job
       GlueVersion: "3.0" # pythonshell=1.0, glueetl=0.9 default
       ExecutionProperty:
         MaxConcurrentRuns: 20
@@ -52,7 +54,7 @@ Resources:
       DefaultArguments:
         "--enable-continuous-cloudwatch-log": true
         "--enable-continuous-log-filter": true
-        "--additional-python-modules": "boxsdk pyspark"
+        "--additional-python-modules": "pyspark" # boxsdk
         "--BUCKET": !Ref Bucket
         "--SOURCE_PATH": !Ref DestCsvPath
         "--SOURCE_FILE": !Ref CsvFilePattern

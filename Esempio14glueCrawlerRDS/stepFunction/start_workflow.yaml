@@ -1,0 +1,62 @@
+---
+Comment: Gkue Workflow runner State Machine. Expects workflowName as input.
+StartAt: StartWorkFlow
+States:
+  StartWorkFlow:
+    Type: Task
+    Resource: ${StartWorkflowFnArn} # input: {'workflowName': '...'}
+    ResultPath: $.glueWf
+    Parameters: 
+      workflowName: ${WorkflowName}
+      Payload.$: $
+#      runProperties.$: '$.runProperties'
+    Next: Wait
+  Wait:
+    Type: Wait
+    Seconds: 30
+    Next: CheckWorkFlowStatus
+  CheckWorkFlowStatus:
+    Type: Task
+    Resource: ${CheckWorkFlowStatusFnArn}
+    Next: "IsWorflowStateTerminal"
+    ResultPath: "$.status"
+    Parameters: 
+      workflowName: ${WorkflowName}
+      Payload.$: $
+    Retry:
+      -
+        ErrorEquals: ["States.ALL"]
+        IntervalSeconds: 1
+        MaxAttempts: 3
+        BackoffRate: 2
+  IsWorflowStateTerminal:
+    Type: Choice
+    Choices:
+      - Variable: $.status.Status
+        StringEquals: COMPLETED
+        Next: End
+      - Variable: $.status.Status
+        StringEquals: STOPPED
+        Next: Error
+      - Variable: $.status.Status
+        StringEquals: ERROR
+        Next: Error
+      - Variable: $.status.Status
+        StringEquals: RUNNING
+        Next: Wait
+      - Variable: $.status.Status
+        StringEquals: STOPPING
+        Next: Wait
+    Default: Error
+  
+  Error:
+    Type: Fail
+    Cause: 'Unknown'
+    Error: 'Fatal error during Workflow execution.'
+
+  End:
+    Type: Pass
+    End: true
+
+  
+...
