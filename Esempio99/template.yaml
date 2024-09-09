@@ -164,15 +164,15 @@ Parameters:
   ServerCertificateArn:
     Description: The ARN of the server certificate. For more information, see the AWS Certificate Manager User Guide.
     Type: String
-    Default: arn:aws:acm:eu-west-1:740456629644:certificate/ab033535-cee1-4cb8-a8e9-91336e966d63
+    Default: arn:aws:acm:eu-west-1:<accountId>:certificate/ab033535-cee1-4cb8-a8e9-91336e966d63
   SAMLProviderArn:
     Description: The Amazon Resource Name (ARN) of the IAM SAML identity provider.
     Type: String
-    Default: arn:aws:iam::740456629644:saml-provider/SAMLProvider
+    Default: arn:aws:iam::<accountId>:saml-provider/SAMLProvider
   SelfServiceSAMLProviderArn:
     Description: The Amazon Resource Name (ARN) of the IAM SAML identity provider for the self-service portal.
     Type: String
-    Default: arn:aws:iam::740456629644:saml-provider/SAMLprovider_self 
+    Default: arn:aws:iam::<accountId>:saml-provider/SAMLprovider_self 
 
 Resources:
   VPC:

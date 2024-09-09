@@ -14,7 +14,7 @@ Parameters:
     Default: prova.csv
   StateMachineArn:
     Type: String
-    Default: 'arn:aws:states:eu-west-1:740456629644:stateMachine:AlbertoStepFunction'
+    Default: 'arn:aws:states:eu-west-1:xxxx:stateMachine:AlbertoStepFunction'
   StateMachineName:
     Type: String
     Default: 'StepFunction'

@@ -2,7 +2,10 @@ import boto3
 import os
 import json
 
+headers= {"Access-Control-Allow-Headers" : "*","Access-Control-Allow-Origin": "*","Access-Control-Allow-Methods": "OPTIONS,POST,GET,DELETE"}
+
 def entrypoint(event, context):
+    print("consumer entrypoint",event)
     sqs=boto3.client('sqs')
     QueueName = os.environ['QueueName']
     AccountId = os.environ['AccountId']
@@ -25,4 +28,4 @@ def entrypoint(event, context):
                 ReceiptHandle=e['ReceiptHandle']
             )
        
-    return {'statusCode': queue['ResponseMetadata']['HTTPStatusCode'] , 'body': json.dumps(data)}
+    return {'statusCode': queue['ResponseMetadata']['HTTPStatusCode'] , 'body': json.dumps(data) , 'headers' : headers}

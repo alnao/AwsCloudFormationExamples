@@ -5,16 +5,13 @@ Description: Esempio coda SQS e due API in Lambda-Python (producer & consumer de
 Parameters:
   QueueName:
     Type: String
-    Default: sqs-es18
+    Default: es15-sqs
   StringParameter:
     Type: String
     Default: 'stringa di esempio come parametro'
   Stage:
     Type: String
     Default: dev
-  AccountId:
-    Type: String
-    Default: 'xxxxxx'
 
 Resources:
   SqsQueue:
@@ -38,7 +35,7 @@ Resources:
         Variables:
           StringParameter: !Ref StringParameter
           QueueName: !Ref QueueName
-          AccountId: !Ref AccountId
+          AccountId: !Ref AWS::AccountId
       Role: !GetAtt SqsQueueLambdaIamRole.Arn
       Events:
         ApiEvent:
@@ -60,7 +57,7 @@ Resources:
         Variables:
           StringParameter: !Ref StringParameter
           QueueName: !Ref QueueName
-          AccountId: !Ref AccountId
+          AccountId: !Ref AWS::AccountId
       Role: !GetAtt SqsQueueLambdaIamRole.Arn
       Events:
         ApiEvent:
@@ -122,6 +119,7 @@ Resources:
           HttpMethod: POST
           CachingEnabled: false
           CacheTtlInSeconds: 300
+
 Outputs:
   StackName:
     Description: Deployed StackName for update

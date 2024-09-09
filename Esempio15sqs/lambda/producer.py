@@ -3,7 +3,11 @@ import os
 import json
 from datetime import datetime 
 
+headers= {"Access-Control-Allow-Headers" : "*","Access-Control-Allow-Origin": "*","Access-Control-Allow-Methods": "OPTIONS,POST,GET,DELETE"}
+
+
 def entrypoint(event, context):
+    print("producer entrypoint",event)
     sqs=boto3.client('sqs')
     QueueName = os.environ['QueueName']
     AccountId = os.environ['AccountId']
@@ -22,4 +26,4 @@ def entrypoint(event, context):
         DelaySeconds=1,
         MessageBody= json.dumps(oggetto) 
     )
-    return {'statusCode': 200 , 'body': json.dumps(response)}
+    return {'statusCode': 200 , 'body': json.dumps(response) , 'headers' : headers}

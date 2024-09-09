@@ -97,7 +97,7 @@ configurazione delle porte
     "containerDefinitions": [
         {
             "name": "api-persone-nodb",
-            "image": "740456629644.dkr.ecr.eu-west-1.amazonaws.com/formazione-ecs-repo-uno:latest",
+            "image": "<accountId>.dkr.ecr.eu-west-1.amazonaws.com/formazione-ecs-repo-uno:latest",
             "cpu": 1,
             "memory": 300,
             

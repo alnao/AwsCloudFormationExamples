@@ -50,10 +50,10 @@ AWS CloudFormation Examples by [AlNao](https://www.alnao.it)
   - tabella Dynamo per la gestione dei log di caricamenti
 - 13 **Job Glue**: definizione Job ETL Glue e una step function che esegue logiche per l'invocazione del Job
 - 14 **Job ClawlerRDS**: definizione di Glue database, Glue table, Glue crawler, Glue job e Gluetrigger con step function l'per l'invocazione del Workflow Glue con database RDS destinazione finale dei dati
+- 15 **SQS**: definizione di una coda SQS e due API-Lambda come producer e consumer
 
 ## Esempi in fase di revisione
 - 17 **Elastic IP**: definizione di un indirizzo IP con Elastic IP assegnato ad una EC2 creata con l'esempio 02
-- 18 **SQS**: definizione di una coda SQS e due Lambda-API producer e consumer
 - 19 **EFS**: un file system EFS e una istanza EC2 che monta il volume in automatico nel user-data
 - 20 **ECR & ECS**: un repository ECR con un template per avviare ECS (con VPC dedicata e ALB)
 - 22: template che crea una VPC e un VPNendpoint da usare con il client da desktop

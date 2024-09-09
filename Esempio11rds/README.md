@@ -89,7 +89,7 @@ Verificare anche la guida sul [tipo di istanze](https://docs.aws.amazon.com/Amaz
   Nota: Executing statements in your database via the AWS API only works (at this time) if your database is an Aurora Serverless cluster with the Data API enabled. To use the Data API you have to pass it an ARN to a secret that contains the database credentials. Vedere [documentazione ufficiale](https://aws.amazon.com/blogs/aws/new-data-api-for-amazon-aurora-serverless/)
   ```
   aws rds-data execute-statement 
-  --resource-arn "arn:aws:rds:eu-west-1:740456629644:cluster:es11-cli-aurora-cluster" 
+  --resource-arn "arn:aws:rds:eu-west-1:<accountId>:cluster:es11-cli-aurora-cluster" 
   --database "es11" 
   --sql "update mytable set quantity=5 where id=201" 
   ```
