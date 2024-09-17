@@ -51,6 +51,7 @@ AWS CloudFormation Examples by [AlNao](https://www.alnao.it)
 - 13 **Job Glue**: definizione Job ETL Glue e una step function che esegue logiche per l'invocazione del Job
 - 14 **Job ClawlerRDS**: definizione di Glue database, Glue table, Glue crawler, Glue job e Gluetrigger con step function l'per l'invocazione del Workflow Glue con database RDS destinazione finale dei dati
 - 15 **SQS**: definizione di una coda SQS e due API-Lambda come producer e consumer
+- 16 **SNS**: definizione di un topic SNS invocato da una StepFunction, messaggi inviati dia mail e ad una coda SQS verso una lambda function
 
 ## Esempi in fase di revisione
 - 17 **Elastic IP**: definizione di un indirizzo IP con Elastic IP assegnato ad una EC2 creata con l'esempio 02
