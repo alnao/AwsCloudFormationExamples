@@ -1,10 +1,8 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Template per crare una istanza EC2
 #Questo si ispira al template ufficiale di esempio
-#https://github.com/awslabs/aws-cloudformation-templates/blob/master/aws/services/EC2/EIP_With_Association.yaml
-#con in aggiunta la configurazione di rete su una VPC e una Subnet specifica (questo esempio non funziona nella VPC di default).
-#In questo esempio presente anche uno script user-data per la creazione di un web-server con una pagina di prova
-#e il comando cfn-signal per la conferma a CloudFormation che l'istanza è correttamente avviata.'
+#https://github.com/aws-cloudformation/aws-cloudformation-templates/blob/main/EC2/EIP_With_Association.yaml
+
 Parameters:
   SubnetId:
     Description: 'Please choose a Subnet Id'
@@ -23,14 +21,6 @@ Parameters:
     Type: String
     Default: t2.micro
     AllowedValues: [t2.nano, t2.micro, t2.small, t2.medium, t2.large, t2.xlarge, t2.2xlarge] 
-#      ,t3.nano, t3.micro, t3.small, t3.medium, t3.large, t3.xlarge, t3.2xlarge,
-#      m4.large, m4.xlarge, m4.2xlarge, m4.4xlarge, m4.10xlarge,
-#      m5.large, m5.xlarge, m5.2xlarge, m5.4xlarge,
-#      c5.large, c5.xlarge, c5.2xlarge, c5.4xlarge, c5.9xlarge,
-#      g3.8xlarge,
-#      r5.large, r5.xlarge, r5.2xlarge, r5.4xlarge, r3.12xlarge,
-#      i3.xlarge, i3.2xlarge, i3.4xlarge, i3.8xlarge,
-#      d2.xlarge, d2.2xlarge, d2.4xlarge, d2.8xlarge]
     ConstraintDescription: must be a valid EC2 instance type.
   SSHLocation:
     Description: The IP address range that can be used to SSH to the EC2 instances

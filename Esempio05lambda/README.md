@@ -71,6 +71,28 @@ Documentazione di [lambda-function](https://docs.aws.amazon.com/AWSCloudFormatio
     aws logs filter-log-events --log-group-name "/aws/lambda/esempio04-S3Notification-XuE5shURUFvH"
     aws logs filter-log-events --log-group-name "/aws/lambda/esempio04-S3Notification-XuE5shURUFvH" --query events[].[timestamp,message] --output text
     ```
+### Esempio creazione Lambda
+    Questo esempio permette di creare una lambda da Riga di comando, nel codice viene importato un modulo con PIP e il modulo viene compreso nel codice della lambda nello zip, viene creata anche la regola IAM necessaria per l'esecuzione.
+    ```
+    pip install --target ./ pymysql
+    echo "{  \"Version\": \"2012-10-17\",  \"Statement\": [    {      \"Effect\": \"Allow\",      \"Principal\": {      \"Service\": [        \"lambda.amazonaws.com\"      ]      },      \"Action\": \"sts:AssumeRole\"    }  ]}" > role.json
+    aws iam create-role --role-name alberto-lambda-test --assume-role-policy-document file://role.json
+    echo "import pymysql" > lambda.py
+    echo "def handler(event, context): " >> lambda.py
+    echo "    print(event)"  >> lambda.py
+    echo "    return \"{ 'statusCode': 200,        'message' : 'OK' }\"" >> lambda.py
+    cat lambda.py
+    linux
+        zip -r lambda.py lambda.zip
+    windows 
+        powershell Compress-Archive -Path ".\*" -DestinationPath ".\lambda.zip"
+    aws lambda create-function --function-name alberto-lambda-test --runtime python3.11 --zip-file fileb://lambda.zip --handler lambda.handler --role arn:aws:iam::740456629644:role/alberto-lambda-test
+    aws lambda invoke --function-name alberto-lambda-test  outputfile.txt
+    cat outputfile.txt
+    aws lambda delete-function --function-name alberto-lambda-test 
+
+    ```
+
 
 # AlNao.it
 Nessun contenuto in questo repository è stato creato con IA o automaticamente, tutto il codice è stato scritto con molta pazienza da Alberto Nao. Se il codice è stato preso da altri siti/progetti è sempre indicata la fonte. Per maggior informazioni visitare il sito [alnao.it](https://www.alnao.it/).

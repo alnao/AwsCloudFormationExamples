@@ -160,3 +160,6 @@ Outputs:
     Description: Public IP address of the newly created EC2 instance
     Condition: WithMetadata
     Value: !GetAtt EC2InstanceWithMetadata.Outputs.PublicIP
+  InstanceId:
+    Description: InstanceId of the newly created EC2 instance
+    Value: !Ref EC2Instance
