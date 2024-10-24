@@ -1,4 +1,6 @@
-Description: EFS
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: AWS CloudFormation Examples by AlNao - 18 EFS
 
 Parameters:
   Encryption:
@@ -12,7 +14,7 @@ Parameters:
   FileSystemName:
     Type: String
     Description: Name for tagging the EFS FileSystem (Default - CloudFormationStackNameFileSystem)
-    Default: "Esempio EFS"
+    Default: "Es19EFS"
   PerformanceMode:
     Type: String
     Description: What performance mode would you like? (Default - generalPurpose)
@@ -52,7 +54,6 @@ Parameters:
   VpcId:
     Type: AWS::EC2::VPC::Id
     Description: Which VPC would you like to use?
-
   MountTarget1Subnet:
     Type: AWS::EC2::Subnet::Id
     Description: Which subnet would you like to use for your first Mount Target?

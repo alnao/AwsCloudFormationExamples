@@ -52,17 +52,16 @@ AWS CloudFormation Examples by [AlNao](https://www.alnao.it)
 - 14 **Job ClawlerRDS**: definizione di Glue database, Glue table, Glue crawler, Glue job e Gluetrigger con step function l'per l'invocazione del Workflow Glue con database RDS destinazione finale dei dati
 - 15 **SQS**: definizione di una coda SQS e due API-Lambda come producer e consumer
 - 16 **SNS**: definizione di un topic SNS invocato da una StepFunction, messaggi inviati dia mail e ad una coda SQS verso una lambda function
+- 17 **Elastic IP**: definizione di un indirizzo IP con Elastic IP assegnato ad una EC2 creata con l'esempio 02
+- 18 **EFS**: un file system EFS montato da una istanza EC2 in automatico nel user-data
 
 ## Esempi in fase di revisione
-- 17 **Elastic IP**: definizione di un indirizzo IP con Elastic IP assegnato ad una EC2 creata con l'esempio 02
-- 19 **EFS**: un file system EFS e una istanza EC2 che monta il volume in automatico nel user-data
-- 20 **ECR & ECS**: un repository ECR con un template per avviare ECS (con VPC dedicata e ALB)
-- 22: template che crea una VPC e un VPNendpoint da usare con il client da desktop
-- 23: template che crea una VPC, un RDS MySql e una EC2, nella EC2 viene installato in automatico un Wordpress
+- 19 **Wordpress**: template che crea un RDS MySql e una EC2, nella EC2 viene installato in automatico un Wordpress
 - 25: template che crea un bilanciatore con istanze che eseguono un Wodpress per ciascuna
 - 26: template che crea un bilanciatere tra istanze EC2 che caricano un unico EFS e un unico RDS
+- 30 **ECR & ECS**: un repository ECR con un template per avviare ECS (con VPC dedicata e ALB)
+- 31: template che crea una VPC e un VPNendpoint da usare con il client da desktop
 - 99: template vari 
-
 
 # Note su CloudFormation & YAML
 Facendo riferimento alla [documentazione ufficiale](https://docs.aws.amazon.com/cloudformation/), CloudFormation è un servizio **Iaac** dichiarativo in YAML (è possibile usare anche JSON *ma meglio non usarlo*). La base della sintassi di CloudFormation in YAML può essere riassunta in questi punti:

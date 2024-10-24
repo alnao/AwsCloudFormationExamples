@@ -36,16 +36,16 @@ Documentazione [CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/la
 
     In questo esempio presente anche lo script user-data per la creazione di un web-server con una pagina di prova e il comando ```cfn-signal``` per la conferma a CloudFormation che l'istanza è correttamente avviata.
 
-
-    **Impotante**: per avviare il template è necessario inserire tre parametri obbligatori: KeyName, VpcId e SubnetId.
-
 * Comandi per la creazione:
     ```
     sam validate
     sam build
     sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket formazione-alberto
     sam deploy --template-file .\packagedV1.yaml --stack-name Esempio02istanzeEC2 --parameter-overrides KeyName=xxxx VpcId=vpc-xxxx SubnetId=subnet-xxx
+
     ```
+    *Nota*: `--capabilities CAPABILITY_IAM` è obbligatorio per le regole IAM eventualmente presenti nei template    
+    *Nota*: per avviare il template è necessario inserire tre parametri obbligatori: KeyName, VpcId e SubnetId.
 
 * Comando per la creazione con il parametro "Prod" per la gestione della "condition" che crea volumi aggiuntivi:
     ```
@@ -180,6 +180,11 @@ La CLI mette a disposizione una serie di comandi per la gestione dei SecurityGro
               From Port: '80'
               ToPort: '80'
               SourceSecurityGroupId: !Ref ALBSecurityGroup
+    ```
+* Recuperare il nome delle AMI disponibili messe a disposizione da AWS, per maggior informazioni vedere la [pagina ufficiale](https://docs.aws.amazon.com/systems-manager/latest/userguide/parameter-store-public-parameters-ami.html)
+    ```
+    aws ssm get-parameters-by-path     --path "/aws/service/ami-amazon-linux-latest" --query "Parameters[].[Name,Value]"
+    
     ```
 
 ## Esempi di user-data
