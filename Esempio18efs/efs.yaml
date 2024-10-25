@@ -2,6 +2,8 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: AWS CloudFormation Examples by AlNao - 18 EFS
 
+#Nota: questo template è usato anche dal Esempio21autoScalingWordpress
+
 Parameters:
   Encryption:
     Type: String

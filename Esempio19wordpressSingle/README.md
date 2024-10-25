@@ -1,32 +1,42 @@
-# AWSCloudFormationExamples
-AWS CloudFormation Examples - vedere i prerequisiti nel README generale
+# AWS CloudFormation Examples - 19 Wodpress
+AWS CloudFormation Examples by [AlNao](https://www.alnao.it)
 
-## Esempio23wordpressSingle
-Template che crea una VPC, un RDS MySql e una EC2, nella EC2 viene installato in automatico un Wordpress
+Creazione e gestione di istanze EC2 con installato un Wordpress che usa un DB RDS e disco EFS
 
-
-Nota: questo template crea EC2 esposta in internet con porta 80 e ssh, 
-il RDS ha come regole di accesso (security group) l'accesso da ovunque.
-Questo non è best practice: Andrebbe fatto un ALB per esposizione in internet e regole rete più rigide, questi saranno esposti in successivi esempi.
+## CloudFormation
+Documentazione [CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-instance.html) di Ec2:
 
 
-Esempio preso da
-```
-https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/sample-templates-applications-eu-west-1.html
-```
+* Comandi per la creazione:
+    ```
+    sam validate
+    sam build
+    sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket formazione-alberto
+    sam deploy --template-file .\packagedV1.yaml --stack-name Esempio19wordpressSingle --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND  --parameter-overrides KeyName=xx VpcId=vpc-xx PublicSubnetId=subnet-xx PrivateSubnet1=subnet-xx PrivateSubnet2=subnet-xx
+    ```
+    *Nota*: `--capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND` sono obbligatori per le regole IAM e CloudFormation presenti nei template    
+    *Nota*: per avviare il template è necessario inserire tutti i parametri obbligatori: KeyName, VpcId, PublicSubnetId,PrivateSubnet1,PrivateSubnet2 .
 
-### Comandi per la creazione
+    
+* Comandi per verifica della istanza:
+    ```
+    ssh ec2-user@xxx.xxx.xxx.xxx   -i keyyyyyyy.pem
+    curl localhost
+    sudo cat /var/log/cloud-init-output.log
+    sudo cat /var/log/cfn-init.log
+    sudo cat /var/log/cloud-init.log
+    sudo cat /var/log/amazon/efs/mount.log
+    ```
 
-```
-sam validate
-sam build
-sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket formazione-alberto
-sam deploy --template-file .\packagedV1.yaml --stack-name Esempio19wordpressSingle --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND  --parameter-overrides KeyName=AlbertoNaoFormazione VpcId=vpc-0013c2751d04a7413 PublicSubnetId=subnet-0b6f53c0291c13f02 PrivateSubnet1=subnet-0ca3ce54f35c3d3ef PrivateSubnet2=subnet-08dbf4b5fed6a83b2
-```
-nota: --capabilities CAPABILITY_IAM è obbligatorio per le regole IAM
+* Comandi per la rimozione di uno stack:
+    ```
+    sam delete --stack-name Esempio19wordpressSingle
+    ```
 
-### Comandi per la rimozione
+# AlNao.it
+Nessun contenuto in questo repository è stato creato con IA o automaticamente, tutto il codice è stato scritto con molta pazienza da Alberto Nao. Se il codice è stato preso da altri siti/progetti è sempre indicata la fonte. Per maggior informazioni visitare il sito [alnao.it](https://www.alnao.it/).
 
-```
-sam delete --stack-name Esempio19wordpressSingle
-``` 
+## License
+Public projects 
+<a href="https://it.wikipedia.org/wiki/GNU_General_Public_License"  valign="middle"><img src="https://img.shields.io/badge/License-GNU-blue" style="height:22px;"  valign="middle"></a> 
+*Free Software!*

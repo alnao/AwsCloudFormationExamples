@@ -1,8 +1,11 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: Template che crea un RDS MYSQL
-#SEE
-#https://octopus.com/blog/creating-rds-instance-cloudformation
+
+#Nota questo template è usato anche dal Esempio21autoScalingWordpress
+
+#SEE https://octopus.com/blog/creating-rds-instance-cloudformation
+
 Parameters:
   MultiAZDatabase:
     Default: 'true'

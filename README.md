@@ -54,11 +54,11 @@ AWS CloudFormation Examples by [AlNao](https://www.alnao.it)
 - 16 **SNS**: definizione di un topic SNS invocato da una StepFunction, messaggi inviati dia mail e ad una coda SQS verso una lambda function
 - 17 **Elastic IP**: definizione di un indirizzo IP con Elastic IP assegnato ad una EC2 creata con l'esempio 02
 - 18 **EFS**: un file system EFS montato da una istanza EC2 in automatico nel user-data
+- 19 **Wordpress**: template che crea un RDS MySql e una EC2, nella EC2 viene installato in automatico un Wordpress
+- 20 **LoadBalancer**: template che crea un bilanciatere con solo una istanza EC2 che esegue un Wordpress senza usare RDS e senza EFS
+- 21 **AutoScaling**: template che crea un ApplicationLoadBalancer e un AutoScalingGroup con istanze che caricano RDS e EFS, in questa configurazione è possibile installare Wordpress in esecuzioni su più istanze
 
 ## Esempi in fase di revisione
-- 19 **Wordpress**: template che crea un RDS MySql e una EC2, nella EC2 viene installato in automatico un Wordpress
-- 25: template che crea un bilanciatore con istanze che eseguono un Wodpress per ciascuna
-- 26: template che crea un bilanciatere tra istanze EC2 che caricano un unico EFS e un unico RDS
 - 30 **ECR & ECS**: un repository ECR con un template per avviare ECS (con VPC dedicata e ALB)
 - 31: template che crea una VPC e un VPNendpoint da usare con il client da desktop
 - 99: template vari 
