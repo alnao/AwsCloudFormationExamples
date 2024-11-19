@@ -89,7 +89,7 @@ Parameters:
     MaxValue: '5'
     ConstraintDescription: must be between 1 and 5 EC2 instances.
   WebServerCapacity:
-    Default: '2'
+    Default: '1'
     Description: The initial number of WebServer instances
     Type: Number
     MinValue: '1'
@@ -354,3 +354,6 @@ Outputs:
           - DNSName
         - /hostname.html
     Description: Website
+  AutoScalingGroupName:
+    Description: Name of Auto Scaling Group
+    Value: !Ref WebServerGroup

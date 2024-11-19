@@ -1,9 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: ApplicationLoadBalancer e un AutoScaling group con istanze che caricano RDS e EFS, in questa configurazione è possibile installare wordpress.
-
-#SEE
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/sample-templates-applications-eu-west-1.html
+Description: CloudWatch-Alams usando come base l'esempio 21 con autoscaling group e load balancer
 
 Parameters:
 # VPC già esistente
@@ -177,96 +174,79 @@ Resources:
   #       DnsServers: !Ref DnsServers
   #       PrivateSubnet1: !GetAtt VPC.Outputs.PrivateSubnet1
   #       PrivateSubnet2: !GetAtt VPC.Outputs.PrivateSubnet2
-#SecurityGroup esterni perchè servono a tutti i componenti successivi
-  LBSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Load balancer traffic
-      SecurityGroupIngress:
-      - IpProtocol: tcp
-        FromPort: '80'
-        ToPort: '80'
-        CidrIp: 0.0.0.0/0
-      VpcId: !Ref VpcId #!GetAtt VPC.Outputs.VPC
-      Tags:
-      - Key: "Name"
-        Value: "LBSecurityGroup" #!Ref AWS::StackName #"LAMPesASG" 
-  WebServerSecurityGroup:
-    Type: 'AWS::EC2::SecurityGroup'
-    Properties:
-      GroupDescription: Enable HTTP access via port 80 locked down to the load balancer + SSH access
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: '80'
-          ToPort: '80'
-          SourceSecurityGroupId: !Ref LBSecurityGroup
-        - IpProtocol: tcp
-          FromPort: '22'
-          ToPort: '22'
-          CidrIp: !Ref SSHLocation
-      VpcId: !Ref VpcId # !GetAtt VPC.Outputs.VPC
-#DATABASE RDS & EFS
-  Database:
+  Base:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: "../Esempio19wordpressSingle/rdsMysql.yaml"
+      TemplateURL: "../Esempio21autoScalingWordpress/template.yaml"
       Parameters:
         VpcId: !Ref VpcId # !GetAtt VPC.Outputs.VPC
-        DBName: !Ref DBName
-        DBUser: !Ref DBUser
-        DBPassword: !Ref DBPassword
-        PrivateSubnet1: !Ref PrivateSubnet1 #!GetAtt VPC.Outputs.PrivateSubnet1
-        PrivateSubnet2: !Ref PrivateSubnet2 #!GetAtt VPC.Outputs.PrivateSubnet2   
+        PrivateSubnet1: !Ref PrivateSubnet1
+        PrivateSubnet2: !Ref PrivateSubnet2
+        PublicSubnet1: !Ref PublicSubnet1
+        PublicSubnet2: !Ref PublicSubnet2
         SSHLocation: !Ref SSHLocation
-  EFS:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: "../Esempio18efs/efs.yaml"
-      Parameters:
-        FileSystemName: !Ref AWS::StackName
-        VpcId: !Ref VpcId #  !GetAtt VPC.Outputs.VPC
-        MountTarget1Subnet: !Ref PrivateSubnet1 #!GetAtt VPC.Outputs.PrivateSubnet1
-        MountTarget2Subnet: !Ref PrivateSubnet2 #!GetAtt VPC.Outputs.PrivateSubnet2
-        OriginSecurityGroup: !Ref WebServerSecurityGroup
-#Website loadbalancer and AutoScaling group
-  WebSite:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: "./loadBalancer.yaml"
-      Parameters:
-        VpcId: !Ref VpcId # !GetAtt VPC.Outputs.VPC
-        PrivateSubnet1: !Ref PrivateSubnet1 #!GetAtt VPC.Outputs.PrivateSubnet1
-        PrivateSubnet2: !Ref PrivateSubnet2 #!GetAtt VPC.Outputs.PrivateSubnet2
-        PublicSubnet1: !Ref PublicSubnet1 #!GetAtt VPC.Outputs.PublicSubnet1
-        PublicSubnet2: !Ref PublicSubnet2 #!GetAtt VPC.Outputs.PublicSubnet2
-        SSHLocation: !Ref SSHLocation
-        KeyName: !Ref KeyName
+        RegionAZ: !Ref RegionAZ
         EC2Ami: !Ref EC2Ami
         InstanceType: !Ref InstanceType
+        KeyName: !Ref KeyName
         DBName: !Ref DBName
         DBUser: !Ref DBUser
         DBPassword: !Ref DBPassword
-        DBRDSreference: !GetAtt Database.Outputs.EndpointAddress
-        WebServerCapacityMin: '1'
-        WebServerCapacityMax: '3'
-        WebServerCapacity: '1'
-        EFSFileSystemId: !GetAtt EFS.Outputs.FileSystemId
-        WebServerSecurityGroup: !Ref WebServerSecurityGroup
-        LBSecurityGroup: !Ref LBSecurityGroup
+        ServerCertificateArn: !Ref ServerCertificateArn
+        SAMLProviderArn: !Ref SAMLProviderArn
+        SelfServiceSAMLProviderArn: !Ref SelfServiceSAMLProviderArn
+        CidrBlockVPCclient: !Ref CidrBlockVPCclient
+
+  CPUScaleUpPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !GetAtt Base.Outputs.AutoScalingGroupName
+      Cooldown: 60
+      ScalingAdjustment: 1
+
+  CPUScaleDownPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !GetAtt Base.Outputs.AutoScalingGroupName
+      Cooldown: 60
+      ScalingAdjustment: -1
+
+  CPUAlarmHigh:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Scale-up if CPU > 84% for 10 minutes
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 84
+      AlarmActions: [!Ref CPUScaleUpPolicy]
+      Dimensions:
+        - Name: AutoScalingGroupName
+          Value: !GetAtt Base.Outputs.AutoScalingGroupName
+      ComparisonOperator: GreaterThanThreshold
+
+  CPUAlarmLow:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Scale-down if CPU < 42% for 10 minutes
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 42
+      AlarmActions: [!Ref CPUScaleDownPolicy]
+      Dimensions:
+        - Name: AutoScalingGroupName
+          Value: !GetAtt Base.Outputs.AutoScalingGroupName
+      ComparisonOperator: LessThanThreshold
+
 
 Outputs:
   StackName:
     Description: Deployed StackName for update
     Value: !Ref AWS::StackName
-  EFSFileSystemId:
-    Description: EFS name
-    Value: !GetAtt EFS.Outputs.FileSystemId
-  DBRDSreference:
-    Description: EFS EndpointAddress
-    Value: !GetAtt Database.Outputs.EndpointAddress
-  WebsiteURL:
-    Description: Website public URL
-    Value: !GetAtt WebSite.Outputs.WebsiteURL
-  AutoScalingGroupName:
-    Description: Name of Auto Scaling Group
-    Value: !GetAtt WebSite.Outputs.AutoScalingGroupName

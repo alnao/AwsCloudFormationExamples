@@ -39,7 +39,7 @@ Documentazione [CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/la
     sam validate
     sam build
     sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket formazione-alberto
-    sam deploy --template-file .\packagedV1.yaml --stack-name Esempio21autoscalingGroupWordpress --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND  --parameter-overrides KeyName=AlbertoNaoFormazione VpcId=vpc-0013c2751d04a7413 PublicSubnet1=subnet-0b6f53c0291c13f02  PublicSubnet2=subnet-08d2c516da5786c77 PrivateSubnet1=subnet-0ca3ce54f35c3d3ef PrivateSubnet2=subnet-08dbf4b5fed6a83b2
+    sam deploy --template-file .\packagedV1.yaml --stack-name Esempio21autoscalingGroupWordpress --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND  --parameter-overrides KeyName=xxx VpcId=vpc-xxx PublicSubnet1=subnet-xxx  PublicSubnet2=subnet-xxx PrivateSubnet1=subnet-xxx PrivateSubnet2=subnet-xxx
     ```
     *Nota*: `--capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND` sono obbligatori per le regole IAM e CloudFormation presenti nei template    
     *Nota*: per avviare il template è necessario inserire tutti i parametri obbligatori: KeyName, VpcId, PublicSubnet1,PrivateSubnet1,PrivateSubnet2 .
@@ -51,10 +51,14 @@ Documentazione [CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/la
     sudo cat /var/log/cloud-init-output.log
     sudo cat /var/log/cfn-init.log
     sudo cat /var/log/cloud-init.log
-    sudo cat /var/www/html/index.html
     grep -ni 'error\|failure' $(sudo find /var/log -name cfn-init\* -or -name cloud-init\*)
     curl localhost
+    sudo cat /mnt/efs/hostname.html
+    sudo cat /tmp/create-site
+    sudo cat /home/ec2-user/info.txt
     ```
+    *Nota*: nel file info nella prima istanza viene indicato che WP è stato installato, dalla seconda istanza viene indicato che il WP è già presente quindi non procede con l'installazione
+    *Nota*: il bilanciatore e l'ALB utilizza il file `hostname.html` per verificare lo stato di una instanza, per quello viene usato ancheper salvare la lista delle istanza avviate
 
 * Comandi per la rimozione di uno stack:
     ```
