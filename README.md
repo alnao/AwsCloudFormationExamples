@@ -59,9 +59,9 @@ AWS CloudFormation Examples by [AlNao](https://www.alnao.it)
 - 21 **AutoScaling**: template che crea un ApplicationLoadBalancer e un AutoScalingGroup con istanze che caricano RDS e EFS, in questa configurazione è possibile installare Wordpress in esecuzioni su più istanze
 - 22 **CloudWatch Alarm**: template che crea degli allarmi per scalare l'autoscaling gruop dell'esempio precedente
 - 23 **ECR**: template che crea un ECR Elastic Container Registry, base per i successivi templates
+- 24 **ECS**: template che crea un ECS e avvia un servizio contenuto in una immagine docker come task con ALB che espone il servizio pubblicamente
 
 ## Esempi in fase di revisione
-- 30 **ECS**: un repository ECR con un template per avviare ECS (con VPC dedicata e ALB)
 - 31: template che crea una VPC e un VPNendpoint da usare con il client da desktop
 - 99: template vari 
 

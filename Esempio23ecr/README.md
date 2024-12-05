@@ -1,4 +1,4 @@
-# AWS CloudFormation Examples - 22 ECR
+# AWS CloudFormation Examples - 23 ECR
 AWS CloudFormation Examples by [AlNao](https://www.alnao.it)
 
 Creazione e gestione di un repository con AWS Elastic Container Registry
@@ -26,10 +26,10 @@ Documentazione [CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/la
     
 * Comandi per il push di una immagine nel repository:
     ```
-    aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin 740456629644.dkr.ecr.eu-west-1.amazonaws.com
+    aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin xxx.dkr.ecr.eu-west-1.amazonaws.com
     docker build -t esempio23-ecr-repository .
-    docker tag esempio23-ecr-repository:latest 740456629644.dkr.ecr.eu-west-1.amazonaws.com/esempio23-ecr-repository:latest
-    docker push 740456629644.dkr.ecr.eu-west-1.amazonaws.com/esempio23-ecr-repository:latest
+    docker tag esempio23-ecr-repository:latest xxx.dkr.ecr.eu-west-1.amazonaws.com/esempio23-ecr-repository:latest
+    docker push xxx.dkr.ecr.eu-west-1.amazonaws.com/esempio23-ecr-repository:latest
 
     ```
 

@@ -86,7 +86,7 @@ Documentazione di [lambda-function](https://docs.aws.amazon.com/AWSCloudFormatio
         zip -r lambda.py lambda.zip
     windows 
         powershell Compress-Archive -Path ".\*" -DestinationPath ".\lambda.zip"
-    aws lambda create-function --function-name alberto-lambda-test --runtime python3.11 --zip-file fileb://lambda.zip --handler lambda.handler --role arn:aws:iam::740456629644:role/alberto-lambda-test
+    aws lambda create-function --function-name alberto-lambda-test --runtime python3.11 --zip-file fileb://lambda.zip --handler lambda.handler --role arn:aws:iam::xxxx:role/alberto-lambda-test
     aws lambda invoke --function-name alberto-lambda-test  outputfile.txt
     cat outputfile.txt
     aws lambda delete-function --function-name alberto-lambda-test 
