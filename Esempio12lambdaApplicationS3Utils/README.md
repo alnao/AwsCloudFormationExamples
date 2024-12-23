@@ -35,6 +35,13 @@ Componenti di questo template:
   - tabella Dynamo per la gestione dei log di caricamenti
   - regola IAM per la gestione dei permessi 
   - regole per la gestione del cors
+  - lambda per eseguire l'invio via sftp di un file da S3, usando una chiave privata salvata in SSM, il parametro deve essere creato via console o usando il comando specifico di aws-cli, la chiave deve esssere in formato RSA del tipo 
+    ```
+    -----BEGIN RSA PRIVATE KEY-----
+    riga1
+    riga2
+    -----END RSA PRIVATE KEY-----
+    ```
 
 ## CloudFormation
 
@@ -43,7 +50,7 @@ Componenti di questo template:
     sam validate
     sam build
     sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket formazione-alberto
-    sam deploy --template-file packagedV1.yaml --stack-name Esempio12lambdaApplicationS3Utils --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND  --parameter-overrides VpcId=vpc-0013c2751d04a7413 Subnet1=subnet-0ca3ce54f35c3d3ef Subnet2=subnet-08dbf4b5fed6a83b2
+    sam deploy --template-file packagedV1.yaml --stack-name Esempio12lambdaApplicationS3Utils --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND  --parameter-overrides VpcId=vpc-xxx Subnet1=subnet-xxx Subnet2=subnet-xxx SftpUsername=xxx SftpHost=xxx.xxx.xxx.xxx SftpPrivateKeyParam=/xxx/key
 
 * Comandi per il caricamento via CLI
     ```
@@ -58,13 +65,22 @@ Componenti di questo template:
     e poi accedere alla pagina `http://localhost:8080/`
 
 
+* Test di invio sftp
+    ```
+    aws s3 cp ./test.zip s3://es12-application/TOSENDSFTP/test.zip
+    aws s3 ls s3://es12-application/TOSENDSFTP/test.zip
+    ```
+    *poi vedere nel server sftp di destinazione se il file text.zip è arrivato correttamente*
+
 * Comandi per la rimozione dello stack
     - Prima di procedere verificare il database RDS, di default nel template c'è il flag `DeletionProtection` attivato, disattivarlo manualmente da console per poter procedere alla cancellazione
     ```
     aws s3 ls s3://es12-application/
     aws s3 rm s3://es12-application/INPUT/test.zip
+    aws s3 ls s3://es12-application/DEZIPPED/
     aws s3 rm s3://es12-application/DEZIPPED/test.xlsx
     aws s3 rm s3://es12-application/CSV/test.csv
+    aws s3 rm s3://es12-application/TOSENDSFTP/test.zip
     aws s3 ls s3://es12-application/
     sam delete --stack-name Esempio12lambdaApplicationS3Utils
     ```
