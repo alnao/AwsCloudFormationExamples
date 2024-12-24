@@ -109,8 +109,28 @@ Parameters:
     Type: Number
     Default: 30
     Description: "Timeout per le funzioni Lambda (in secondi)"
+  SftpInputFolderName:
+    Type: String
+    Default: "TOSENDSFTP/"
+    Description: "Cartella per l'invio via sftp"
+  SftpUsername:
+    Type: String
+    Description: "Username per l'invio via sftp"
+  SftpHost:
+    Type: String
+    Description: "Host per l'invio via sftp"
+  SftpPort:
+    Type: String
+    Default: "22"
+    Description: "Porta per l'invio via sftp"
+  SftpPrivateKeyParam:
+    Type: String
+    Description: "Nome del parametro SSM contenente la chiave per l'invio via sftp"
+
 Conditions:
   IsPostgres: !Equals [!Ref RDSEngine, "postgres"]
+
+
 
 Resources:
   S3Bucket:
@@ -574,6 +594,10 @@ Resources:
                   - 'ec2:DescribeInstances'
                   - 'ec2:AttachNetworkInterface'
                 Resource: '*'
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${SftpPrivateKeyParam}'
 
   DecompressLambdaPermission:
     Type: AWS::Lambda::Permission
@@ -638,6 +662,53 @@ Resources:
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGateway}/*/GET/upload-zip"
+
+  SendSftpRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "EventBridge rule to trigger SendSftpLambda on file upload"
+      EventPattern:
+        source:
+          - aws.s3
+        detail-type:
+          - "Object Created"
+        detail:
+          bucket:
+            name:
+              - !Ref S3Bucket
+          object:
+            key:
+              - prefix: !Ref SftpInputFolderName
+#            key:
+#              - suffix: !Ref ZipFileExtension
+      State: !Ref StateTrigger
+      Targets:
+        - Arn: !GetAtt SendSftpLambda.Arn
+          Id: "SendSftpLambdaTarget"
+  SendSftpLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-send-sftp"
+      CodeUri: ./lambdaSftp
+      Handler: sftpclient.handler
+      Runtime: !Ref LambdaRuntime
+      MemorySize: !Ref LambdaMemorySize
+      Timeout: !Ref LambdaTimeout
+      Environment:
+        Variables:
+          USERNAME: !Ref SftpUsername
+          HOST: !Ref SftpHost
+          PORT: !Ref SftpPort
+          PRIVATE_KEY_PARAM: !Ref SftpPrivateKeyParam
+      Role: !GetAtt LambdaExecutionRole.Arn
+  SendSftpLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref SendSftpLambda
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt SendSftpRule.Arn
+
 
 Outputs:
   ApiGatewayUrl:
