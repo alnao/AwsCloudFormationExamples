@@ -46,7 +46,7 @@ Resources:
       ConnectionLogOptions: 
         Enabled: true
         CloudwatchLogGroup: !Ref LogsGroup
-      Description: !Ref AWS::StackName #"My Client VPN Endpoint"
+      Description: "My Client VPN Endpoint"
       DnsServers: 
         - !Ref DnsServers #"10.84.0.2"
       SecurityGroupIds:
@@ -55,11 +55,6 @@ Resources:
       SplitTunnel: true
       TransportProtocol: "tcp"
       VpcId: !Ref VPCid #!GetAtt LAMPesVPC.Outputs.VPC  #ex !Ref LAMPesVPC
-      TagSpecifications:
-        - ResourceType: "client-vpn-endpoint"
-          Tags:
-          - Key: "Name"
-            Value: !Ref AWS::StackName # "VPCEndpoint"
   LogsGroup:
     Type: AWS::Logs::LogGroup
   SecurityGroup:
@@ -90,7 +85,7 @@ Resources:
     Properties: 
       ClientVpnEndpointId: !Ref Endpoint
       SubnetId: !Ref PrivateSubnet2
-# non serve perchè vengono create in automatico dal ClientVpnTargetNetworkAssociation
+#  
 #  Route1:
 #    Type: AWS::EC2::ClientVpnRoute
 #    DependsOn: TargetNetworkAss1 #prevent InvalidClientVpnActiveAssociationNotFound https://docs.aws.amazon.com/AWSEC2/latest/APIReference/errors-overview.html

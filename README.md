@@ -60,10 +60,8 @@ AWS CloudFormation Examples by [AlNao](https://www.alnao.it)
 - 22 **CloudWatch Alarm**: template che crea degli allarmi per scalare l'autoscaling gruop dell'esempio precedente
 - 23 **ECR**: template che crea un ECR Elastic Container Registry, base per i successivi templates
 - 24 **ECS**: template che crea un ECS e avvia un servizio contenuto in una immagine docker come task con ALB che espone il servizio pubblicamente
-
-## Esempi in fase di revisione
-- 31: template che crea una VPC e un VPNendpoint da usare con il client da desktop
-- 99: template vari 
+- 25 **VPC & Client Vpn Endpoint**: template che crea una VPC usando un template AWS ufficiale e un Client-Vpn-Endpoint
+- 99: template vari abbandonati a se stessi
 
 # Note su CloudFormation & YAML
 Facendo riferimento alla [documentazione ufficiale](https://docs.aws.amazon.com/cloudformation/), CloudFormation è un servizio **Iaac** dichiarativo in YAML (è possibile usare anche JSON *ma meglio non usarlo*). La base della sintassi di CloudFormation in YAML può essere riassunta in questi punti:
