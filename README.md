@@ -16,9 +16,16 @@ AWS CloudFormation Examples by [AlNao](https://www.alnao.it)
 
 # Prerequisiti
 - Un account AWS attivo
-- La AWS-CLI installata, [documentazione ufficiale](https://docs.aws.amazon.com/it_it/cli/v1/userguide/cli-chap-install.html) con una utenza tecnica di tipo programmatico configurata su IAM con permessi di esecuzione di CloudFormation e configurazione della AWS-CLI con il comando
-    - ```aws configuration```
-- La AWS-CLI-SAM installata correttamente, [documentazione ufficiale](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
+- La **AWS-CLI** installata, [documentazione ufficiale](https://docs.aws.amazon.com/it_it/cli/v1/userguide/cli-chap-install.html) con una utenza tecnica di tipo programmatico configurata su IAM con permessi di esecuzione di CloudFormation e configurazione della AWS-CLI con il comando
+  - ```aws configuration```
+  - è possibile anche configurare un profilo con la AWS-CLI con la sequenza di comandi
+    ```
+    aws configure set --profile nome_profilo aws_access_key_id xxxxxx
+    aws configure set --profile nome_profilo aws_secret_access_key xxxxxx
+    aws configure set --profile nome_profilo region eu-west-1
+    aws configure set --profile nome_profilo output json
+    ```
+- La **AWS-CLI-SAM** installata correttamente, [documentazione ufficiale](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
 - Per ogni template, se non indicato diversamente, i comandi da eseguire per eseguire il deploy sono:
   - ```sam validate```
   - ```sam build```
@@ -61,7 +68,8 @@ AWS CloudFormation Examples by [AlNao](https://www.alnao.it)
 - 23 **ECR**: template che crea un ECR Elastic Container Registry, base per i successivi templates
 - 24 **ECS**: template che crea un ECS e avvia un servizio contenuto in una immagine docker come task con ALB che espone il servizio pubblicamente
 - 25 **VPC & Client Vpn Endpoint**: template che crea una VPC usando un template AWS ufficiale e un Client-Vpn-Endpoint
-- 99: template vari abbandonati a se stessi
+- 26 **Blockchain**: template che crea usa Lambda e Dynamo per creare una piccola blockchain con algormitmo *proof of work* con difficoltà molto bassa
+- 99: template e file vari, abbandonati a se stessi
 
 # Note su CloudFormation & YAML
 Facendo riferimento alla [documentazione ufficiale](https://docs.aws.amazon.com/cloudformation/), CloudFormation è un servizio **Iaac** dichiarativo in YAML (è possibile usare anche JSON *ma meglio non usarlo*). La base della sintassi di CloudFormation in YAML può essere riassunta in questi punti:

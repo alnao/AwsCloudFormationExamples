@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <script>
+        // API URL Configuration - Change this to your API endpoint
+        const API_URL = 'https://xxxxxxxx.execute-api.eu-west-1.amazonaws.com/dev';
+    </script>
+
+    <div class="container mt-4">
+        <h1 class="mb-4">Blockchain Dashboard</h1>
+
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="transaction-tab" data-bs-toggle="tab" data-bs-target="#transaction" type="button" role="tab">Add Transaction</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="mine-tab" data-bs-toggle="tab" data-bs-target="#mine" type="button" role="tab">Mine Block</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="transactions-tab" data-bs-toggle="tab" data-bs-target="#transactions" type="button" role="tab">View Transactions</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="balances-tab" data-bs-toggle="tab" data-bs-target="#balances" type="button" role="tab">View Balances</button>
+            </li>
+        </ul>
+
+        <div class="tab-content mt-3" id="myTabContent">
+            <!-- Add Transaction Tab -->
+            <div class="tab-pane fade show active" id="transaction" role="tabpanel">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Add New Transaction</h5>
+                        <form id="transactionForm" class="mt-3">
+                            <div class="mb-3">
+                                <label for="sender" class="form-label">Sender</label>
+                                <input type="text" class="form-control" id="sender" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="recipient" class="form-label">Recipient</label>
+                                <input type="text" class="form-control" id="recipient" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="amount" class="form-label">Amount</label>
+                                <input type="number" class="form-control" id="amount" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Submit Transaction</button>
+                        </form>
+                        <div id="transactionResult" class="mt-3"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mine Block Tab -->
+            <div class="tab-pane fade" id="mine" role="tabpanel">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Mine New Block</h5>
+                        <button id="mineButton" class="btn btn-success mt-3">Start Mining</button>
+                        <div id="miningResult" class="mt-3"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View Transactions Tab -->
+            <div class="tab-pane fade" id="transactions" role="tabpanel">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Transaction History</h5>
+                        <button id="refreshTransactions" class="btn btn-info mb-3">Refresh Transactions</button>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Sender</th>
+                                        <th>Recipient</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Block Index</th>
+                                        <th>Timestamp</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transactionsTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View Balances Tab -->
+            <div class="tab-pane fade" id="balances" role="tabpanel">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Account Balances</h5>
+                        <button id="refreshBalances" class="btn btn-info mb-3">Refresh Balances</button>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Address</th>
+                                        <th>Balance</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="balancesTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Add Transaction
+        document.getElementById('transactionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const resultDiv = document.getElementById('transactionResult');
+            try {
+                const response = await fetch(`${API_URL}/transaction`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+                        'Access-Control-Allow-Methods': 'OPTIONS,POST'
+                    },
+                    body: JSON.stringify({
+                        sender: document.getElementById('sender').value,
+                        recipient: document.getElementById('recipient').value,
+                        amount: Number(document.getElementById('amount').value)
+                    })
+                });
+                const data = await response.json();
+                resultDiv.innerHTML = `<div class="alert alert-success">Transaction submitted successfully!</div>`;
+                e.target.reset();
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+            }
+        });
+
+        // Mine Block
+        document.getElementById('mineButton').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('miningResult');
+            resultDiv.innerHTML = '<div class="alert alert-info">Mining in progress...</div>';
+            try {
+                const response = await fetch(`${API_URL}/mine`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                resultDiv.innerHTML = `<div class="alert alert-success">Block mined successfully!</div>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+            }
+        });
+
+        // View Transactions
+        async function loadTransactions() {
+            const tbody = document.getElementById('transactionsTableBody');
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center">Loading...</td></tr>';
+            try {
+                const response = await fetch(`${API_URL}/transactions`);
+                const data = await response.json();
+                tbody.innerHTML = '';
+                data.transactions.forEach(tx => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${tx.sender}</td>
+                            <td>${tx.recipient}</td>
+                            <td>${tx.amount}</td>
+                            <td><span class="badge bg-${tx.status === 'mined' ? 'success' : 'warning'}">${tx.status}</span></td>
+                            <td>${tx.block_index || 'N/A'}</td>
+                            <td>${new Date(tx.timestamp).toLocaleString()}</td>
+                        </tr>
+                    `;
+                });
+            } catch (error) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error: ${error.message}</td></tr>`;
+            }
+        }
+
+        document.getElementById('refreshTransactions').addEventListener('click', loadTransactions);
+        document.getElementById('transactions-tab').addEventListener('click', loadTransactions);
+
+        // View Balances
+        async function loadBalances() {
+            const tbody = document.getElementById('balancesTableBody');
+            tbody.innerHTML = '<tr><td colspan="2" class="text-center">Loading...</td></tr>';
+            try {
+                const response = await fetch(`${API_URL}/balances`);
+                const data = await response.json();
+                tbody.innerHTML = '';
+                Object.entries(data.balances).forEach(([address, balance]) => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${address}</td>
+                            <td>${balance}</td>
+                        </tr>
+                    `;
+                });
+            } catch (error) {
+                tbody.innerHTML = `<tr><td colspan="2" class="text-center text-danger">Error: ${error.message}</td></tr>`;
+            }
+        }
+
+        document.getElementById('refreshBalances').addEventListener('click', loadBalances);
+        document.getElementById('balances-tab').addEventListener('click', loadBalances);
+    </script>
+</body>
+</html>
