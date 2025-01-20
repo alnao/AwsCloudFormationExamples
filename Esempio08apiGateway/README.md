@@ -39,6 +39,33 @@ Documentazione di [API Gateway function](https://docs.aws.amazon.com/AWSCloudFor
     Properties:
       ...
 ```
+Il tipo serverless è definito con un tipo specifico che si aggancia in automatico alle lambda function:
+```
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Stage
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+        MaxAge: "'600'"
+      OpenApiVersion: 3.0.2
+      CacheClusterEnabled: false
+      CacheClusterSize: '0.5'
+  ...
+  LambdaGetMethod:
+    Type: AWS::Serverless::Function
+    Properties:
+      ...
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /getMethod
+            Method: GET
+            RestApiId: !Ref ApiGateway
+```
 
 * Comandi per la creazione dell'esempio
     ```
@@ -80,6 +107,37 @@ Documentazione di [API Gateway function](https://docs.aws.amazon.com/AWSCloudFor
   aws apigateway get-method --rest-api-id j4mcalp3ne --resource-id 13p7e1 --http-method GET --query [httpMethod,operationName] --output table
   ```
 
+## Configurazione API private con VPC-EndPoint
+Di default l'API gateway è esposto in internet con end-point nel formato
+```
+https://XXXXXXXX.execute-api.eu-west-1.amazonaws.com/<STAGE>/<metodo>
+```
+E' possibile configurare via ConsoleWeb (e forse via CloudFormation) il servizio API Gateway in modo tale che l'endpoint sia in rete privata ed esposto solo tramite VPC-EndPoint:
+- nel dettaglio della API, premendo il bottone "Edit", bisogna selezionare il "API endpoint type"="Private" e bisogna inserire il vpc-endpoint nel formato `vpc-xxxxx`, ricordarsi di usare il bottone "Add" altrimenti non salva la configurazione
+- nel dettaglio della API, nella vista "recource policy" bisogna aggiungere il blocco che permette al VPC-endpoint di invocare chiamare la API:
+  ```
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": "*",
+        "Action": "execute-api:Invoke",
+        "Resource": "arn:aws:execute-api:eu-west-1:<ID-ACCOUNT>:<ID-API>/*/*/*"
+      }
+    ]
+  }
+  ```
+- abilitare il CORS, nel dettaglio della risorsa (non dello stage), elezionare il metodo e usare il bottone "Enable CORS", selezionare la voce "Options" e salvare
+- eseguire il deploy della risorsa selezionando lo stage corretto
+
+
+Così facendo l'endpoint diventa del tipo:
+```
+https://<ID-APIGATEWAY>-<VPC-ENDPOINT>.execute-api.eu-west-1.amazonaws.com/<STAGE>/<metodo>
+```
+inoltre, bisogna ricordarsi che il DNS locale può metterci anche mezz'ora ad aggiornarsi.
+ 
 
 # AlNao.it
 Nessun contenuto in questo repository è stato creato con IA o automaticamente, tutto il codice è stato scritto con molta pazienza da Alberto Nao. Se il codice è stato preso da altri siti/progetti è sempre indicata la fonte. Per maggior informazioni visitare il sito [alnao.it](https://www.alnao.it/).
