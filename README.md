@@ -69,7 +69,8 @@ AWS CloudFormation Examples by [AlNao](https://www.alnao.it)
 - 24 **ECS**: template che crea un ECS e avvia un servizio contenuto in una immagine docker come task con ALB che espone il servizio pubblicamente
 - 25 **VPC & Client Vpn Endpoint**: template che crea una VPC usando un template AWS ufficiale e un Client-Vpn-Endpoint
 - 26 **Blockchain**: template che crea usa Lambda e Dynamo per creare una piccola blockchain con algormitmo *proof of work* con difficoltà molto bassa
-- 99: template e file vari, abbandonati a se stessi
+- 27 **EKS**: template che crea un cluster e un nodo EKR con l'esecuzione di un microservizio java che si collega ad un database Mysql-RDS
+- 99: template e file vari *abbandonati a se stessi*
 
 # Note su CloudFormation & YAML
 Facendo riferimento alla [documentazione ufficiale](https://docs.aws.amazon.com/cloudformation/), CloudFormation è un servizio **Iaac** dichiarativo in YAML (è possibile usare anche JSON *ma meglio non usarlo*). La base della sintassi di CloudFormation in YAML può essere riassunta in questi punti:
