@@ -247,6 +247,18 @@ Facendo riferimento alla [documentazione ufficiale](https://docs.aws.amazon.com/
     Proprieta=!Ref EnvName
   ```
 
+
+# Panoramic script
+Script `aws_panoramic.bash` creato con l'IA:
+- fammi un nuovo script che mi crea variabili d'ambiente con le informazioni: vpc di default, subnets e igw, natg, tutti i security group, tutte le role iam non di default, tutti gli ECR, tutti eks cluster, tutti gli eks nodes, tutte le ec2, tutti gli RDS,
+- facciamo così: fammi un nuovo script che mi crea variabili d'ambiente con le informazioni: vpc di default, subnets e igw, natg, tutti i security group, tutti gli ECR, tutti eks cluster, tutti gli eks nodes, tutte le ec2, tutti gli RDS,
+- nello script aggiungi S3, cloudfront, cloudformation, cloudwatch e altri 5 servizi a tua scelta
+- dammi il codice della funzione print_section_header
+To run:
+```
+source aws_panoramic.bash
+```
+
 # AlNao.it
 Nessun contenuto in questo repository è stato creato con IA o automaticamente, tutto il codice è stato scritto con molta pazienza da Alberto Nao. Se il codice è stato preso da altri siti/progetti è sempre indicata la fonte. Per maggior informazioni visitare il sito [alnao.it](https://www.alnao.it/).
 
