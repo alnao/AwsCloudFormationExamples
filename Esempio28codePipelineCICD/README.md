@@ -1,7 +1,19 @@
 # AWS CloudFormation Examples - 28 CodePipeline
 AWS CloudFormation Examples by [AlNao](https://www.alnao.it)
 
-Ho questa soluzione: un microservizio in java spring boot "Esempio03dbDockerAWS-backend" e un mini sito ""Esempio03dbDockerAWS-frontend", eseguiti su due docker (ogni progetto ha il suo dockerfile), vorrei creare su AWS una infratuttura per un CD/CI usando cloudFormation, dammi il template completo e tutti i comandi
+Contenuto dell'esempio:
+- Script `deploy_cloudformation.sh`: script sh per eseguire il rilascio del CloudFormation, questo permette di evitare di dover impostare i parametri ma li calcola con i valori di default (VPC e Subnet)
+- Script `template.sh`: template CloudFormation per la definizione di tutti i componenti descritti qua sotto
+- Script `create_github_secret.sh`: script sh per creare il "Parametro SSM" necessario con il token GitHub
+- Script `create_infra.sh`: script sh per creare tutta l'infrastruttura (alternativa al CloudFormation)
+- Script `cleanup_aws_infra.sh`: script sh per distruggere tutti gli elementi creati con lo script (alternativa al CloudFormation)
+
+
+**CodeCommit** è stato deprecato da AWS quindi viene usato un repository pubblico GitHub. See [AWS Blog](https://aws.amazon.com/it/blogs/devops/how-to-migrate-your-aws-codecommit-repository-to-another-git-provider/): After careful consideration, we have made the decision to close new customer access to AWS CodeCommit, effective July 25, 2024. AWS CodeCommit existing customers can continue to use the service as normal. AWS continues to invest in security, availability, and performance improvements for AWS CodeCommit, but we do not plan to introduce new features.
+
+
+## IA
+I comandi per creare questi esempi sono stati: un microservizio in java spring boot "Esempio03dbDockerAWS-backend" e un mini sito ""Esempio03dbDockerAWS-frontend", eseguiti su due docker (ogni progetto ha il suo dockerfile), vorrei creare su AWS una infratuttura per un CD/CI usando cloudFormation, dammi il template completo e tutti i comandi. Per semplicità ho tolto il frontend perchè non funzionava molto.
 
 
 Ecco un template CloudFormation completo e i comandi necessari. Considereremo l'utilizzo di:
@@ -27,6 +39,7 @@ Prerequisiti
 - Un progetto Spring Boot (Esempio03dbDockerAWS-backend) con il suo Dockerfile nella root.
 - Un progetto React (Esempio03dbDockerAWS-frontend) con il suo Dockerfile (se lo deployi su ECS) o pronto per il build statico (se su S3). Per il caso di S3, assicurati che il comando npm run build o yarn build produca i file statici in una directory come build o dist.
 - Repository Git: Carica il codice sorgente del backend e del frontend in un repository GitHub.
+
 
 ## CloudFormation
 Documentazione [CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-eks-cluster-computeconfig.html) di EKS:

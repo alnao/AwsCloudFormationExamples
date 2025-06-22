@@ -29,3 +29,4 @@ sam deploy --template-file packagedV1.yaml --stack-name Esempio28codePipelineCIC
 
 echo "Deploy del Esempio28codePipelineCICD completato con successo!"
 echo "-------------------------------------------------------------"
+

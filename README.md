@@ -70,7 +70,7 @@ AWS CloudFormation Examples by [AlNao](https://www.alnao.it)
 - 25 **VPC & Client Vpn Endpoint**: template che crea una VPC usando un template AWS ufficiale e un Client-Vpn-Endpoint
 - 26 **Blockchain**: template che crea usa Lambda e Dynamo per creare una piccola blockchain con algormitmo *proof of work* con difficoltà molto bassa
 - 27 **EKS**: template che crea un cluster e un nodo EKR con l'esecuzione di un microservizio java che si collega ad un database Mysql-RDS
-- 28 **CodePipeline**: template che crea una PipeLine di deploy CICD usando GitHub e docker (ECR & ECS): *non funziona molto bene ma non riesco a capire perchè la PipeLine rimane appesa in CREATE_IN_PROGRESS*
+- 28 **CodePipeline**: template che crea una PipeLine di deploy CICD usando GitHub e docker (ECR & ECS): *non funziona molto bene ma non riesco a capire perchè la PipeLine rimane appesa in CREATE_IN_PROGRESS*. Presente anche uno script sh che usa il AWS CLI come alternativa funzionante.
 - 99: template e file vari *abbandonati a se stessi*
 
 # Note su CloudFormation & YAML
