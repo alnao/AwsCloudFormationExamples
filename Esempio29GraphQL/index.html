@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Lista Note - AppSync GraphQL Demo</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { margin: 2em; }
+    #note-list { margin-bottom: 2em; }
+    .nota { border-bottom: 1px solid #ccc; padding: 0.5em 0; }
+    .nota:last-child { border-bottom: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="mb-4">Lista Note</h1>
+    <div id="note-list" class="mb-4"></div>
+    <h2 class="h4">Aggiungi Nota</h2>
+    <div class="input-group mb-3" style="max-width: 400px;">
+      <input type="text" id="nota-input" class="form-control" placeholder="Scrivi una nota...">
+      <button class="btn btn-primary" onclick="addNota()">Aggiungi</button>
+    </div>
+  </div>
+  <script>
+    // Inserisci qui i valori reali dopo il deploy
+    const API_URL = 'INSERISCI_ENDPOINT_GRAPHQL';
+    const API_KEY = 'INSERISCI_API_KEY';
+
+    async function fetchNote() {
+      const query = `query { getNote { id testo } }`;
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': API_KEY
+        },
+        body: JSON.stringify({ query })
+      });
+      const data = await res.json();
+      renderNote(data.data.getNote || []);
+    }
+
+    function renderNote(note) {
+      const list = document.getElementById('note-list');
+      list.innerHTML = '';
+      if (note.length === 0) {
+        list.innerHTML = '<div class="alert alert-info">Nessuna nota presente.</div>';
+        return;
+      }
+      note.forEach(n => {
+        const div = document.createElement('div');
+        div.className = 'nota d-flex align-items-center justify-content-between';
+        div.innerHTML = `<span>${n.testo}</span> <button class="btn btn-danger btn-sm" onclick="deleteNota('${n.id}')">Elimina</button>`;
+        list.appendChild(div);
+      });
+    }
+
+    async function addNota() {
+      const testo = document.getElementById('nota-input').value;
+      if (!testo) return;
+      const mutation = `mutation { addNota(testo: "${testo}") { id testo } }`;
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': API_KEY
+        },
+        body: JSON.stringify({ query: mutation })
+      });
+      document.getElementById('nota-input').value = '';
+      fetchNote();
+    }
+
+    async function deleteNota(id) {
+      const mutation = `mutation { deleteNota(id: "${id}") }`;
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': API_KEY
+        },
+        body: JSON.stringify({ query: mutation })
+      });
+      fetchNote();
+    }
+
+    fetchNote();
+  </script>
+</body>
+</html>
