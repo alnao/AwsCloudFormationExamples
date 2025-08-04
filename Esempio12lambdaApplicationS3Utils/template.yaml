@@ -13,7 +13,6 @@ Parameters:
     AllowedValues:
       - "ENABLED"
       - "DISABLED"
-
   BucketName:
     Type: String
     Default: "es12-application"
@@ -57,12 +56,12 @@ Parameters:
     Description: "Spazio di archiviazione allocato in GB"
   RDSEngine:
     Type: String
-    Default: "mysql"
+    Default: "aurora-mysql"
     AllowedValues:
       - "mysql"
       - "postgres"
-#      - aurora-mysql
-#      - aurora-postgresql
+      - "aurora-mysql"
+      - "aurora-postgresql"
     Description: "Motore del database RDS"
 #  RDSEngineVersion:
 #    Type: String
@@ -87,12 +86,10 @@ Parameters:
     Description: "ID del VPC in cui creare il security group RDS"
     ConstraintDescription: must be the id of an existing VPC
   Subnet1:
-    Type: String
     Type: AWS::EC2::Subnet::Id
     Description: "ID della prima subnet per RDS"
     ConstraintDescription: must be the id of an existing Subnet.
   Subnet2:
-    Type: String
     Type: AWS::EC2::Subnet::Id
     Description: "ID della seconda subnet per RDS"
     ConstraintDescription: must be the id of an existing Subnet.
@@ -126,11 +123,43 @@ Parameters:
   SftpPrivateKeyParam:
     Type: String
     Description: "Nome del parametro SSM contenente la chiave per l'invio via sftp"
+  DynamoScanTableSuffix:
+    Type: String
+    Default: "-scan"
+    Description: "Suffisso per la tabella DynamoDB usata dalla scansione S3"
+  EnableAPI:
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: "Abilita la creazione delle risorse API Gateway e relative Lambda/API."
+  EnableEventBridge:
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: "Abilita la creazione delle regole EventBridge."
+  AuroraServerlessV2:
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: "Abilita Aurora Serverless v2 se Aurora è selezionato come motore."
+  TagEsempio12:
+    Type: String
+    Default: "esempio-12"
+    Description: "Tag identificativo per tutte le risorse di esempio 12"
 
 Conditions:
   IsPostgres: !Equals [!Ref RDSEngine, "postgres"]
-
-
+  IsAuroraMySQL: !Equals [!Ref RDSEngine, "aurora-mysql"]
+  IsAuroraPostgres: !Equals [!Ref RDSEngine, "aurora-postgresql"]
+  IsAurora: !Or [!Condition IsAuroraMySQL, !Condition IsAuroraPostgres]
+  IsRDSInstance: !Not [!Condition IsAurora]
+  UseAuroraServerlessV2: !And [!Condition IsAurora, !Equals [!Ref AuroraServerlessV2, "true"]]
 
 Resources:
   S3Bucket:
@@ -138,11 +167,11 @@ Resources:
     Properties:
       BucketName: !Ref BucketName
       AccessControl: Private
-#      PublicAccessBlockConfiguration:
-#        BlockPublicAcls: False
-#        BlockPublicPolicy: False
-#        IgnorePublicAcls: False
-#        RestrictPublicBuckets: False
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
       VersioningConfiguration:
         Status: Enabled
       BucketEncryption:
@@ -159,6 +188,22 @@ Resources:
             AllowedOrigins: ['*']
             ExposedHeaders: [ETag]
             MaxAge: 3000
+      BucketPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: uno
+            Effect: Allow
+            Principal: '*'
+            Action: '*'
+            Resource: !Sub "arn:aws:s3:::${BucketName}/*"
+          - Sid: due
+            Effect: Allow
+            Principal: '*'
+            Action: '*'
+            Resource: !Sub "arn:aws:s3:::${BucketName}"
+      Tags:
+        - Key: esempio-12
+          Value: !Ref TagEsempio12
 
 #  EventBridgeRule:
 #    Type: AWS::Events::Rule
@@ -180,6 +225,7 @@ Resources:
 
   DecompressZipEventRule:
     Type: AWS::Events::Rule
+    Condition: EnableEventBridge
     Properties:
       Description: "EventBridge rule to trigger DecompressLambda on ZIP file upload"
       EventPattern:
@@ -247,15 +293,49 @@ Resources:
         - Arn: !GetAtt ProcessCSVLambda.Arn
           Id: "ProcessCSVLambdaTarget"
 
+  RDSCluster:
+    Type: AWS::RDS::DBCluster
+    Condition: IsAurora
+    Properties:
+      Engine: !Ref RDSEngine
+      MasterUsername: !Ref RDSMasterUsername
+      MasterUserPassword: !Ref RDSMasterUserPassword
+      DBSubnetGroupName: !Ref RDSSubnetGroup
+      VpcSecurityGroupIds:
+        - !Ref RDSSecurityGroup
+      DatabaseName: !Ref RDSDatabaseName
+      BackupRetentionPeriod: 7
+      DeletionProtection: true
+      Port: !If [IsAuroraPostgres, 5432, 3306]
+      EngineMode: !If [UseAuroraServerlessV2, "provisioned", "provisioned"]
+      ScalingConfiguration:
+        !If [UseAuroraServerlessV2, {MinCapacity: 0.5, MaxCapacity: 2, AutoPause: true, SecondsUntilAutoPause: 300}, !Ref "AWS::NoValue"]
+      Tags:
+        - Key: esempio-12
+          Value: !Ref TagEsempio12
+
+  RDSClusterInstance:
+    Type: AWS::RDS::DBInstance
+    Condition: IsAurora
+    Properties:
+      DBClusterIdentifier: !Ref RDSCluster
+      DBInstanceClass: !Ref RDSInstanceClass
+      Engine: !Ref RDSEngine
+      PubliclyAccessible: false
+      DBSubnetGroupName: !Ref RDSSubnetGroup
+      Tags:
+        - Key: esempio-12
+          Value: !Ref TagEsempio12
+
   RDSDatabase:
     Type: AWS::RDS::DBInstance
+    Condition: IsRDSInstance
     Properties:
       DBName: !Ref RDSDatabaseName
       DBInstanceIdentifier: !Sub "${AWS::StackName}-rds-instance"
       AllocatedStorage: !Ref RDSAllocatedStorage
       DBInstanceClass: !Ref RDSInstanceClass
       Engine: !Ref RDSEngine
-#      EngineVersion: !Ref RDSEngineVersion
       MasterUsername: !Ref RDSMasterUsername
       MasterUserPassword: !Ref RDSMasterUserPassword
       MultiAZ: false
@@ -268,6 +348,9 @@ Resources:
       VPCSecurityGroups: 
         - !Ref RDSSecurityGroup
       DBSubnetGroupName: !Ref RDSSubnetGroup
+      Tags:
+        - Key: esempio-12
+          Value: !Ref TagEsempio12
   RDSSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
     Properties:
@@ -278,6 +361,8 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName}-RDSSubnetGroup"
+        - Key: esempio-12
+          Value: !Ref TagEsempio12
 
   RDSSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -288,10 +373,12 @@ Resources:
         - IpProtocol: tcp
           FromPort: !If [IsPostgres, 5432, 3306]
           ToPort: !If [IsPostgres, 5432, 3306]
-          CidrIp: 0.0.0.0/0  # Nota: In un ambiente di produzione, limitare questo al tuo VPC o IP specifici
+          CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName}-RDSSecurityGroup"
+        - Key: esempio-12
+          Value: !Ref TagEsempio12
 
   DynamoDBTable:
     Type: AWS::DynamoDB::Table
@@ -306,6 +393,35 @@ Resources:
       ProvisionedThroughput:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
+      Tags:
+        - Key: esempio-12
+          Value: !Ref TagEsempio12
+
+  DynamoScanTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${DynamoTableName}${DynamoScanTableSuffix}"
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: nomeFile
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: nomeFile-index
+          KeySchema:
+            - AttributeName: nomeFile
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      Tags:
+        - Key: esempio-12
+          Value: !Ref TagEsempio12
 
   ApiGatewayCloudWatchRole:
     Type: 'AWS::IAM::Role'
@@ -327,6 +443,7 @@ Resources:
 
   ApiGateway:
     Type: AWS::Serverless::Api
+    Condition: EnableAPI
     DependsOn: 
       - ApiGatewayAccountConfig
       - LambdaExecutionRole
@@ -384,6 +501,20 @@ Resources:
                 passthroughBehavior: "when_no_match"
                 httpMethod: "POST"
                 type: "aws_proxy"
+          /list-new-files:
+            get:
+              x-amazon-apigateway-integration:
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ListNewFilesLambda.Arn}/invocations"
+                passthroughBehavior: "when_no_match"
+                httpMethod: "POST"
+                type: "aws_proxy"
+          /find-file:
+            get:
+              x-amazon-apigateway-integration:
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FindFileLambda.Arn}/invocations"
+                passthroughBehavior: "when_no_match"
+                httpMethod: "POST"
+                type: "aws_proxy"
       TracingEnabled: true
       AccessLogSetting:
         DestinationArn: !GetAtt ApiGatewayLogGroup.Arn
@@ -409,6 +540,8 @@ Resources:
           S3_BUCKET_NAME: !Ref S3Bucket
           DEZIPPED_FOLDER_NAME: !Ref DezippedFolderName
       Role: !GetAtt LambdaExecutionRole.Arn
+      Tags:
+        TagEsempio12: !Ref TagEsempio12
 
   ConvertToCSVLambda:
     Type: AWS::Serverless::Function
@@ -424,6 +557,8 @@ Resources:
           S3_BUCKET_NAME: !Ref S3Bucket
           CSV_FOLDER_NAME: !Ref CsvFolderName
       Role: !GetAtt LambdaExecutionRole.Arn
+      Tags:
+        TagEsempio12: !Ref TagEsempio12
 
   ProcessCSVLambda:
     Type: AWS::Serverless::Function
@@ -437,20 +572,22 @@ Resources:
       Environment:
         Variables:
           S3_BUCKET_NAME: !Ref S3Bucket
-          RDS_HOST: !GetAtt RDSDatabase.Endpoint.Address
-          RDS_PORT: !GetAtt RDSDatabase.Endpoint.Port
+          RDS_HOST: !If [IsAurora, !GetAtt RDSCluster.Endpoint.Address, !GetAtt RDSDatabase.Endpoint.Address]
+          RDS_PORT: !If [IsAurora, !GetAtt RDSCluster.Endpoint.Port, !GetAtt RDSDatabase.Endpoint.Port]
           RDS_DATABASE_NAME: !Ref RDSDatabaseName
-          RDS_USERNAME: !Ref RDSMasterUsername
-          RDS_PASSWORD: !Ref RDSMasterUserPassword
           RDS_TABLE_NAME: !Ref RDSTableName
           DYNAMO_TABLE_NAME: !Ref DynamoTableName
+          RDS_ENGINE: !Ref RDSEngine
+          RDS_SECRET_ARN: !Ref RDSSecret
       Role: !GetAtt LambdaExecutionRole.Arn
       VpcConfig:
-        SubnetIds: #devono essere le private?
+        SubnetIds:
           - !Ref Subnet1
           - !Ref Subnet2
         SecurityGroupIds:
           - !Ref RDSSecurityGroup
+      Tags:
+        TagEsempio12: !Ref TagEsempio12
 
   ReadRDSDataLambda:
     Type: AWS::Serverless::Function
@@ -463,19 +600,21 @@ Resources:
       CodeUri: ./lambda
       Environment:
         Variables:
-          RDS_HOST: !GetAtt RDSDatabase.Endpoint.Address
-          RDS_PORT: !GetAtt RDSDatabase.Endpoint.Port
+          RDS_HOST: !If [IsAurora, !GetAtt RDSCluster.Endpoint.Address, !GetAtt RDSDatabase.Endpoint.Address]
+          RDS_PORT: !If [IsAurora, !GetAtt RDSCluster.Endpoint.Port, !GetAtt RDSDatabase.Endpoint.Port]
           RDS_DATABASE_NAME: !Ref RDSDatabaseName
-          RDS_USERNAME: !Ref RDSMasterUsername
-          RDS_PASSWORD: !Ref RDSMasterUserPassword
           RDS_TABLE_NAME: !Ref RDSTableName
+          RDS_ENGINE: !Ref RDSEngine
+          RDS_SECRET_ARN: !Ref RDSSecret
       Role: !GetAtt LambdaExecutionRole.Arn
       VpcConfig:
-        SubnetIds: #devono essere le private?
+        SubnetIds:
           - !Ref Subnet1
           - !Ref Subnet2
         SecurityGroupIds:
           - !Ref RDSSecurityGroup
+      Tags:
+        TagEsempio12: !Ref TagEsempio12
 
   ReadDynamoDBDataLambda:
     Type: AWS::Serverless::Function
@@ -490,6 +629,8 @@ Resources:
         Variables:
           DYNAMODB_TABLE_NAME: !Ref DynamoTableName
       Role: !GetAtt LambdaExecutionRole.Arn
+      Tags:
+        TagEsempio12: !Ref TagEsempio12
 
   ListExcelFilesLambda:
     Type: AWS::Serverless::Function
@@ -505,6 +646,8 @@ Resources:
           S3_BUCKET_NAME: !Ref S3Bucket
           DEZIPPED_FOLDER_NAME: !Ref DezippedFolderName
       Role: !GetAtt LambdaExecutionRole.Arn
+      Tags:
+        TagEsempio12: !Ref TagEsempio12
 
   DownloadExcelFileLambda:
     Type: AWS::Serverless::Function
@@ -519,6 +662,8 @@ Resources:
         Variables:
           S3_BUCKET_NAME: !Ref S3Bucket
       Role: !GetAtt LambdaExecutionRole.Arn
+      Tags:
+        TagEsempio12: !Ref TagEsempio12
 
   UploadZipLambda:
     Type: AWS::Serverless::Function
@@ -534,6 +679,8 @@ Resources:
           S3_BUCKET_NAME: !Ref S3Bucket
           INPUT_FOLDER_NAME: !Ref InputFolderName
       Role: !GetAtt LambdaExecutionRole.Arn
+      Tags:
+        TagEsempio12: !Ref TagEsempio12
 
 
   LambdaExecutionRole:
@@ -576,7 +723,9 @@ Resources:
                   - dynamodb:DeleteItem
                   - dynamodb:Query
                   - dynamodb:Scan
-                Resource: !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoTableName}"
+                Resource: 
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoTableName}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoTableName}-scan"
               - Effect: Allow
                 Action:
                   - logs:CreateLogGroup
@@ -598,6 +747,10 @@ Resources:
                 Action:
                   - ssm:GetParameter
                 Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${SftpPrivateKeyParam}'
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Ref RDSSecret
 
   DecompressLambdaPermission:
     Type: AWS::Lambda::Permission
@@ -701,6 +854,8 @@ Resources:
           PORT: !Ref SftpPort
           PRIVATE_KEY_PARAM: !Ref SftpPrivateKeyParam
       Role: !GetAtt LambdaExecutionRole.Arn
+      Tags:
+        TagEsempio12: !Ref TagEsempio12
   SendSftpLambdaPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -709,42 +864,203 @@ Resources:
       Principal: events.amazonaws.com
       SourceArn: !GetAtt SendSftpRule.Arn
 
+  ScanS3AndUpdateDynamoLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-scan-s3-update-dynamo"
+      Handler: scan_s3_update_dynamo_lambda.handler
+      Runtime: !Ref LambdaRuntime
+      MemorySize: !Ref LambdaMemorySize
+      Timeout: 300
+      CodeUri: ./lambda
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !Ref S3Bucket
+          DYNAMO_TABLE_NAME: !Sub "${DynamoTableName}${DynamoScanTableSuffix}"
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Tags:
+        TagEsempio12: !Ref TagEsempio12
+
+  ScanS3AndUpdateDynamoSchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Schedula la scansione S3 ogni giorno alle 01:00"
+      ScheduleExpression: 'cron(0 1 * * ? *)'
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt ScanS3AndUpdateDynamoLambda.Arn
+          Id: "ScanS3AndUpdateDynamoTarget"
+
+  ScanS3AndUpdateDynamoLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ScanS3AndUpdateDynamoLambda
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt ScanS3AndUpdateDynamoSchedule.Arn
+
+  FindFileLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-find-file-lambda"
+      Handler: find_file_lambda.handler
+      Runtime: !Ref LambdaRuntime
+      MemorySize: !Ref LambdaMemorySize
+      Timeout: !Ref LambdaTimeout
+      CodeUri: ./lambda
+      Environment:
+        Variables:
+          DYNAMO_TABLE_NAME: !Sub "${DynamoTableName}${DynamoScanTableSuffix}"
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Tags:
+        TagEsempio12: !Ref TagEsempio12
+
+  FindFileLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref FindFileLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGateway}/*/GET/find-file"
+
+  ListNewFilesLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-list-new-files-lambda"
+      Handler: list_new_files_lambda.handler
+      Runtime: !Ref LambdaRuntime
+      MemorySize: !Ref LambdaMemorySize
+      Timeout: !Ref LambdaTimeout
+      CodeUri: ./lambda
+      Environment:
+        Variables:
+          DYNAMO_TABLE_NAME: !Sub "${DynamoTableName}${DynamoScanTableSuffix}"
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Tags:
+        TagEsempio12: !Ref TagEsempio12
+
+  ListNewFilesLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ListNewFilesLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGateway}/*/GET/list-new-files"
+
+  RDSSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub "${AWS::StackName}-rds-secret"
+      Description: "Credenziali RDS per Lambda"
+      GenerateSecretString:
+        SecretStringTemplate: !Sub '{"username": "${RDSMasterUsername}"}'
+        GenerateStringKey: "password"
+        PasswordLength: 20
+        ExcludeCharacters: '"@/\\'
+      Tags:
+        - Key: esempio-12
+          Value: !Ref TagEsempio12
+
+  ProcessCSVLambdaErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-ProcessCSVLambda-Errors"
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ProcessCSVLambda
+      AlarmDescription: "Allarme: errori nella Lambda ProcessCSVLambda"
+      TreatMissingData: notBreaching
+
+  ReadRDSDataLambdaErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-ReadRDSDataLambda-Errors"
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ReadRDSDataLambda
+      AlarmDescription: "Allarme: errori nella Lambda ReadRDSDataLambda"
+      TreatMissingData: notBreaching
+
+  ApiGateway5XXAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-ApiGateway-5XX"
+      MetricName: 5XXError
+      Namespace: AWS/ApiGateway
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: ApiName
+          Value: !Ref ApiGateway
+      AlarmDescription: "Allarme: errori 5XX su API Gateway"
+      TreatMissingData: notBreaching
 
 Outputs:
   ApiGatewayUrl:
     Description: "URL dell'API Gateway"
-    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}"
+    Value: !If [EnableAPI, !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}", "DISABLED"]
   S3BucketName:
     Description: "Nome del bucket S3"
     Value: !Ref S3Bucket
+  S3BucketArn:
+    Description: "ARN del bucket S3"
+    Value: !GetAtt S3Bucket.Arn
   RDSEndpoint:
     Description: "Endpoint del database RDS"
-    Value: !GetAtt RDSDatabase.Endpoint.Address
+    Value: !If [IsAurora, !GetAtt RDSCluster.Endpoint.Address, !GetAtt RDSDatabase.Endpoint.Address]
   RDSPort:
     Description: "Porta del database RDS"
-    Value: !GetAtt RDSDatabase.Endpoint.Port
-# Tolti perchè non servono a nulla
-#  DecompressLambdaArn:
-#    Description: "ARN della Lambda di decompressione"
-#    Value: !GetAtt DecompressLambda.Arn
-#  ConvertToCSVLambdaArn:
-#    Description: "ARN della Lambda di conversione in CSV"
-#    Value: !GetAtt ConvertToCSVLambda.Arn
-#  ProcessCSVLambdaArn:
-#    Description: "ARN della Lambda di processamento CSV"
-#    Value: !GetAtt ProcessCSVLambda.Arn
-#  ReadRDSDataLambdaArn:
-#    Description: "ARN della Lambda per leggere dati da RDS"
-#    Value: !GetAtt ReadRDSDataLambda.Arn
-#  ReadDynamoDBDataLambdaArn:
-#    Description: "ARN della Lambda per leggere dati da DynamoDB"
-#    Value: !GetAtt ReadDynamoDBDataLambda.Arn
-#  ListExcelFilesLambdaArn:
-#    Description: "ARN della Lambda per elencare i file Excel"
-#    Value: !GetAtt ListExcelFilesLambda.Arn
-#  DownloadExcelFileLambdaArn:
-#    Description: "ARN della Lambda per scaricare un file Excel"
-#    Value: !GetAtt DownloadExcelFileLambda.Arn
-#  UploadZipLambdaArn:
-#    Description: "ARN della Lambda per caricare file ZIP"
-#    Value: !GetAtt UploadZipLambda.Arn
+    Value: !If [IsAurora, !GetAtt RDSCluster.Endpoint.Port, !GetAtt RDSDatabase.Endpoint.Port]
+  RDSClusterArn:
+    Description: "ARN del cluster RDS (se Aurora)"
+    Value: !If [IsAurora, !GetAtt RDSCluster.Arn, "N/A"]
+  RDSDatabaseArn:
+    Description: "ARN dell'istanza RDS (se non Aurora)"
+    Value: !If [IsRDSInstance, !GetAtt RDSDatabase.Arn, "N/A"]
+  RDSSecretArn:
+    Description: "ARN del secret delle credenziali RDS"
+    Value: !Ref RDSSecret
+  DynamoTableName:
+    Description: "Nome della tabella DynamoDB"
+    Value: !Ref DynamoTableName
+  DynamoTableArn:
+    Description: "ARN della tabella DynamoDB"
+    Value: !GetAtt DynamoDBTable.Arn
+  DynamoScanTableName:
+    Description: "Nome della tabella DynamoDB usata per la scansione S3"
+    Value: !Sub "${DynamoTableName}${DynamoScanTableSuffix}"
+  DynamoScanTableArn:
+    Description: "ARN della tabella DynamoDB usata per la scansione S3"
+    Value: !GetAtt DynamoScanTable.Arn
+  ProcessCSVLambdaArn:
+    Description: "ARN della Lambda di process csv"
+    Value: !GetAtt ProcessCSVLambda.Arn
+  ReadRDSDataLambdaArn:
+    Description: "ARN della Lambda di lettura RDS"
+    Value: !GetAtt ReadRDSDataLambda.Arn
+  ScanS3AndUpdateDynamoLambdaArn:
+    Description: "ARN della Lambda di scansione S3 e aggiornamento DynamoDB"
+    Value: !GetAtt ScanS3AndUpdateDynamoLambda.Arn
+  ListNewFilesLambdaArn:
+    Description: "ARN della Lambda per elencare i file nuovi"
+    Value: !GetAtt ListNewFilesLambda.Arn
+  FindFileLambdaArn:
+    Description: "ARN della Lambda per ricerca file per nome"
+    Value: !GetAtt FindFileLambda.Arn

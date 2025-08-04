@@ -1,47 +1,48 @@
 # AWS CloudFormation Examples - 12 Lambda Application S3 Utils
 AWS CloudFormation Examples by [AlNao](https://www.alnao.it)
 
-Componenti di questo template:
-  - database RDS come base dati (di default viene usato il tipo Aurora più economico)
-  - bucket S3 come storage dei files
-    - * nota: per il caricamento/upload tramite lambda è necessario modificare *manualmente* le proprietà del bucket disattivando il "Block all public access" e aggiungendo la policy nel bucket:
-    ```
-    {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Sid": "uno",
-                "Effect": "Allow",
-                "Principal": "*",
-                "Action": "*",
-                "Resource": "arn:aws:s3:::es12-application/*"
-            },
-            {
-                "Sid": "due",
-                "Effect": "Allow",
-                "Principal": "*",
-                "Action": "*",
-                "Resource": "arn:aws:s3:::es12-application"
-            }
-        ]
-    }
-    ```
-    nota: questa policy potrebbe è molto permissiva, ci sono versioni con più restrizioni su IP sorgente o altre limitazioni possibili, si rimanda alla [documetazione ufficiale](https://docs.aws.amazon.com/AmazonS3/latest/userguide/PresignedUrlUploadObject.html) per tutti i dettagli
-  - lambda per il caricamento di un file su S3 tramite **presigned_url** di tipo Put
-  - lambda function per estrazione ZIP 
-  - lambda per la conversione conversione da excel a csv
-  - lambda function per caricamento dati nel database
-  - api gateway per recupero dati dal databse e caricamento file nel bucket con due lambda function specifiche
-  - tabella Dynamo per la gestione dei log di caricamenti
-  - regola IAM per la gestione dei permessi 
-  - regole per la gestione del cors
-  - lambda per eseguire l'invio via sftp di un file da S3, usando una chiave privata salvata in SSM, il parametro deve essere creato via console o usando il comando specifico di aws-cli, la chiave deve esssere in formato RSA del tipo 
+## Descrizione e Architettura
+
+Questo template CloudFormation implementa una soluzione serverless per la gestione di file su S3, elaborazione tramite Lambda, salvataggio dati su RDS (Aurora Serverless v2 supportato) e DynamoDB, API Gateway, EventBridge, tagging avanzato e best practice di sicurezza e monitoraggio.
+
+### Componenti principali:
+- **Bucket S3** per storage file, con "Block all public access" disabilitato e policy custom già inclusa (modifica manuale non più necessaria).
+- **Lambda Functions**:
+  - Caricamento file su S3 tramite presigned_url (PUT)
+  - Estrazione ZIP
+  - Conversione Excel → CSV
+  - Caricamento dati su RDS (MySQL/Postgres/Aurora)
+  - Invio file via SFTP (chiave privata in SSM)
+  - Scansione S3 e salvataggio lista file su DynamoDB *scan*
+  - API per elencare file nuovi e cercare file per nome
+- **DynamoDB**: due tabelle, una per i log e una per la scansione file (`<nome>-scan`, suffisso parametrico)
+- **RDS/Aurora**: database relazionale, gestione credenziali tramite AWS Secrets Manager
+- **API Gateway**: endpoint REST per tutte le funzioni principali
+- **EventBridge**: orchestrazione eventi e schedulazione (es. scansione S3 giornaliera)
+- **IAM**: policy dettagliate per sicurezza
+- **CloudWatch**: allarmi su errori Lambda e API Gateway
+- **Tagging**: tutte le risorse supportano un tag parametrico (`esempio-12`)
+- La lambda per eseguire l'invio via sftp di un file da S3 necessita di una chiave privata salvata in SSM, il parametro deve essere creato via console o usando il comando specifico di aws-cli, la chiave deve esssere in formato RSA del tipo 
     ```
     -----BEGIN RSA PRIVATE KEY-----
     riga1
     riga2
     -----END RSA PRIVATE KEY-----
     ```
+
+
+
+## Costi stimati (con Aurora Serverless v2)
+
+- **Aurora Serverless v2**: ~89 USD/mese (1 ACU medio, 30GB storage)
+- **S3**: ~1 USD/mese
+- **Lambda**: 0 USD (entro free tier)
+- **DynamoDB**: ~3 USD/mese (2 tabelle)
+- **EventBridge/API Gateway/CloudWatch**: <1 USD/mese
+- **Totale stimato**: **~94 USD/mese**
+- La voce dominante è Aurora Serverless v2. Se vuoi risparmiare valuta DynamoDB-only o Aurora Serverless v1.
+
+
 
 ## CloudFormation
 
@@ -133,12 +134,30 @@ Componenti di questo template:
 23) provando a caricare un file, il presigned url di upload mi da errore 403, cosa può essere?
 24) L'URL presigned mi ritorna errore 500 , perchè ?
 25) io utilizzo la pagina in allegato, modificala e utilizza axios quando chiami la api per fare upload del file "data.upload_url"
+26) a questo template aggiungi una funzione lambda in python che prende tutti i file del bucket (anche guardando le sottocartelle cartelle) e scrive una nuova tabella Dynamo con i campi: id, nomeFile, path, dimensione, dataOraCreazioneFile, nuovo, dataOraAggiornamentoRiga. il campo nuovo deve essere di default a S. aggiungi la logica se il nomeFile-path è già presente non deve inserire la riga ma modifica il campo "nuovo" s "N". fammi anche una API per leggere quali sono i file nuovi (con nuovo=S). aggiungimi lo schedulatore che esegue la lambda ogni giorno alle 01:00 della mattina, poi fammi una lambda che dato un "nomeFile" lo cerca che mi ritorna se è presente in quali path, aggiungi GSI se servono.
+    1) ora aggiungimi l'output del template che c'era prima e aggiunti cose se le trovi interessanti
+    2) nel template vorrei disabilitare il "Block all public access" e aggiungere la policy nel bucket "{...}"
+    3) voglio che le tabelle dynamo siano 2, quella originale che c'era già prima e una seconda "<nome>-scan" usata dalla scan e della api che abbiamo creato oggi
+    4) il "-scan" lo vorrei come parametro
+27) ora mi analizzi quanto mi costerebbe questo template in esecuzione pensando a circa 1000 file caricati al giorno
+    - S3: ~$1
+    - Lambda: $0 (entro free tier)
+    - DynamoDB: ~$3
+    - RDS: ~$15-20
+    - EventBridge/API Gateway/Logs: <$1
+    Totale: circa $20-25/mese. La voce dominante è RDS. Se puoi usare Aurora Serverless o DynamoDB per tutto, puoi risparmiare molto.
+    1) verifica che Aurora funzioni e che funzioni anche mysql come possibile opzione
+    2) nel template voglio aggiungere RDS_ENGINE per le lambda e controllami le lambda, poi nel template controllami e sistema i parametri RDS_HOST e RDS_PORT nel caso si tratti di aurora
+    3) fai queste modifiche ora: credenziali RDS su AWS Secret manager, aggiungi allarme cloudwatch per evidenziare se la lambda o l'api è andato in errore, aggiungi aurora v2, aggiungi output con le ARN e le URL che mancano, aggiungi parametro per attivare/disattivare API e EventBridge ma di default abilitato
+    4) ora calcolami i costi con Aurora
+28) ora vorrei modificare il template e aggiungere un tag parametrico "esempio-12" a tutte le risorse che accettano i tag
+    1) perchè hai tolto il ListNewFilesLambdaPermission ?
+
 
 # AlNao.it
 Nessun contenuto in questo repository è stato creato con IA o automaticamente, tutto il codice è stato scritto con molta pazienza da Alberto Nao. Se il codice è stato preso da altri siti/progetti è sempre indicata la fonte. Per maggior informazioni visitare il sito [alnao.it](https://www.alnao.it/).
 
 ## License
-**Free Software, Hell Yeah!**
-See [MIT](https://it.wikipedia.org/wiki/Licenza_MIT)
-
-Copyright (c) 2023 AlNao.it
+Public projects 
+<a href="https://it.wikipedia.org/wiki/GNU_General_Public_License"  valign="middle"><img src="https://img.shields.io/badge/License-GNU-blue" style="height:22px;"  valign="middle"></a> 
+*Free Software!*
