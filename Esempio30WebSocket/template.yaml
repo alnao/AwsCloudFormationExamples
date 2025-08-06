@@ -1,0 +1,284 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Sistema di gioco con WebSocket, REST API e logging completo
+
+Parameters:
+  StageName:
+    Type: String
+    Default: esempio30
+    Description: Nome dello stage API Gateway
+  PlayersTableName:
+    Type: String
+    Default: esempio30-Players
+    Description: Nome tabella giocatori
+  MatchesTableName:
+    Type: String
+    Default: esempio30-Matches
+    Description: Nome tabella match
+  LogsTableName:
+    Type: String
+    Default: esempio30-Logs
+    Description: Nome tabella log
+  BansTableName:
+    Type: String
+    Default: esempio30-Bans
+    Description: Nome tabella ban
+  MaxInactivityDays:
+    Type: Number
+    Default: 42
+    Description: Giorni massimi di inattività prima dell'eliminazione
+  MaxNumberChangesPerDay:
+    Type: Number
+    Default: 5
+    Description: Numero massimo di modifiche del numero per giorno
+
+Globals:
+  Function:
+    Runtime: python3.11
+    Timeout: 10
+    MemorySize: 128
+    Architectures: [arm64]
+
+Resources:
+
+  ### === DynamoDB Tables === ###
+  PlayersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref PlayersTableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: nickname
+          AttributeType: S
+      KeySchema:
+        - AttributeName: nickname
+          KeyType: HASH
+
+  MatchesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref MatchesTableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: matchId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: matchId
+          KeyType: HASH
+
+  LogsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref LogsTableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: timestamp
+          AttributeType: S
+      KeySchema:
+        - AttributeName: timestamp
+          KeyType: HASH
+
+  BansTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref BansTableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: nickname
+          AttributeType: S
+      KeySchema:
+        - AttributeName: nickname
+          KeyType: HASH
+
+  ### === WebSocket API === ###
+  GameWebSocketApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: GameWebSocketApi
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: "$request.body.action"
+
+  WebSocketConnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref GameWebSocketApi
+      RouteKey: $connect
+      Target: !Sub integrations/${WebSocketConnectIntegration}
+
+  WebSocketDisconnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref GameWebSocketApi
+      RouteKey: $disconnect
+      Target: !Sub integrations/${WebSocketDisconnectIntegration}
+
+  ### === Lambda Functions (WebSocket) === ###
+  WebSocketConnectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions_flat/
+      Handler: connect.lambda_handler
+      Events:
+        Connect:
+          Type: Api
+          Properties:
+            Path: /connect
+            Method: GET
+            RestApiId: !Ref GameWebSocketApi
+      Environment:
+        Variables:
+          PLAYERS_TABLE: !Ref PlayersTableName
+          WS_ENDPOINT: !Sub "https://${GameWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
+
+  WebSocketDisconnectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions_flat/
+      Handler: disconnect.lambda_handler
+      Events:
+        Disconnect:
+          Type: Api
+          Properties:
+            Path: /disconnect
+            Method: GET
+            RestApiId: !Ref GameWebSocketApi
+      Environment:
+        Variables:
+          PLAYERS_TABLE: !Ref PlayersTableName
+
+  SetNumberFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions_flat/
+      Handler: set_number.lambda_handler
+      Environment:
+        Variables:
+          PLAYERS_TABLE: !Ref PlayersTableName
+          LOGS_TABLE: !Ref LogsTableName
+          MAX_CHANGES_PER_DAY: !Ref MaxNumberChangesPerDay
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PlayersTableName
+        - AWSLambdaBasicExecutionRole
+
+  GuessNumberFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions_flat/
+      Handler: guess_number.lambda_handler
+      Environment:
+        Variables:
+          PLAYERS_TABLE: !Ref PlayersTableName
+          MATCHES_TABLE: !Ref MatchesTableName
+          LOGS_TABLE: !Ref LogsTableName
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PlayersTableName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MatchesTableName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref LogsTableName
+        - AWSLambdaBasicExecutionRole
+
+  ### === Lambda Functions (REST API) === ###
+  GetScoresFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions_flat/
+      Handler: get_scores.lambda_handler
+      Environment:
+        Variables:
+          PLAYERS_TABLE: !Ref PlayersTableName
+      Events:
+        GetScores:
+          Type: Api
+          Properties:
+            Path: /scores
+            Method: GET
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref PlayersTableName
+        - AWSLambdaBasicExecutionRole
+
+  BanUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions_flat/
+      Handler: ban_user.lambda_handler
+      Environment:
+        Variables:
+          BANS_TABLE: !Ref BansTableName
+          LOGS_TABLE: !Ref LogsTableName
+          PLAYERS_TABLE: !Ref PlayersTableName
+          WS_ENDPOINT: !Sub "https://${GameWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
+      Events:
+        BanUser:
+          Type: Api
+          Properties:
+            Path: /admin/ban
+            Method: POST
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref BansTableName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref LogsTableName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PlayersTableName
+        - AWSLambdaBasicExecutionRole
+
+  GetMatchHistoryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions_flat/
+      Handler: get_match_log.lambda_handler
+      Events:
+        GetMatches:
+          Type: Api
+          Properties:
+            Path: /admin/matches
+            Method: GET
+      Environment:
+        Variables:
+          MATCHES_TABLE: !Ref MatchesTableName
+          LOGS_TABLE: !Ref LogsTableName
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref MatchesTableName
+        - DynamoDBReadPolicy:
+            TableName: !Ref LogsTableName
+        - AWSLambdaBasicExecutionRole
+
+  MatchControlFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions_flat/
+      Handler: match_control.lambda_handler
+      Environment:
+        Variables:
+          PLAYERS_TABLE: !Ref PlayersTableName
+          WS_ENDPOINT: !Sub "https://${GameWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
+      Events:
+        Broadcast:
+          Type: Api
+          Properties:
+            Path: /admin/broadcast
+            Method: POST
+        ResetNumbers:
+          Type: Api
+          Properties:
+            Path: /admin/reset-numbers
+            Method: POST
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PlayersTableName
+        - AWSLambdaBasicExecutionRole
+
+  ### === Outputs === ###
+Outputs:
+  WebSocketURL:
+    Description: URL della WebSocket API
+    Value: !Sub "wss://${GameWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
+
+  RestApiEndpoint:
+    Description: Endpoint REST API
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
