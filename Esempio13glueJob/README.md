@@ -37,14 +37,14 @@ Documentazione di [Glue-job](https://docs.aws.amazon.com/AWSCloudFormation/lates
     ```
     sam validate
     sam build
-    sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket formazione-alberto
+    sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket cloudformation-alnao
     sam deploy --template-file .\packagedV1.yaml --stack-name Esempio13glueJob  --capabilities CAPABILITY_IAM 
 
-    aws s3 cp ./glue/etl_code.py s3://formazione-alberto/CODE/glue/etl_code.py
+    aws s3 cp ./glue/etl_code.py s3://cloudformation-alnao/CODE/glue/etl_code.py
     ```
 * Comandi per il caricamento via CLI
     ```
-    aws s3 cp .\persone.xlsx s3://formazione-alberto/INPUT/excel/persone.xlsx
+    aws s3 cp .\persone.xlsx s3://cloudformation-alnao/INPUT/excel/persone.xlsx
     
     ```
 * Comandi per la rimozione dello stack

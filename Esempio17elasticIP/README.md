@@ -17,7 +17,7 @@ Vedi esempio ufficiale [repository](https://github.com/aws-cloudformation/aws-cl
   ```
   sam validate
   sam build
-  sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket formazione-alberto
+  sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket cloudformation-alnao
   sam deploy --template-file .\packagedV1.yaml --stack-name Esempio17eip  --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND --parameter-overrides KeyName=xxx VpcId=vpc-xxx SubnetId=subnet-xxx
   ```
 * Comando per la rimozione dello stack

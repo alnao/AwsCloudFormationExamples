@@ -28,6 +28,8 @@ Resources:
       Tags:
         - Key: "StackName"
           Value: !Ref AWS::StackName
+        - Key: "Project"
+          Value: "Esempio03webSiteS3"
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -45,7 +47,7 @@ Resources:
       PolicyDocument:
         Version: 2012-10-17
         Statement:
-          - Sid: AllowSSLRequestsOnly 
+          - Sid: AllowSSLRequestsOnly
             Action: 's3:GetObject'
             Effect: Allow
             Resource: !Join
@@ -54,6 +56,9 @@ Resources:
                 - !Ref NomeBucket
                 - /*
             Principal: '*'
+            Condition:
+              Bool:
+                aws:SecureTransport: 'true'
 Outputs:
   WebsiteURL:
     Value: !GetAtt

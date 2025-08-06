@@ -9,7 +9,7 @@ Parameters:
   Bucket:
     Type: String
     Description: Bucket di appoggio per l'import
-    Default: formazione-alberto
+    Default: cloudformation-alnao
   FilePattern:
     Type: String
     Description: Pattern di partenza di excel

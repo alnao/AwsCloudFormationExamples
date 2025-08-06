@@ -77,20 +77,24 @@ Resources:
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         IgnorePublicAcls: true
-        BlockPublicPolicy: false
-        RestrictPublicBuckets: false
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
 
   FrontendBucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
       Bucket: !Ref FrontendBucket
       PolicyDocument:
+        Version: 2012-10-17
         Statement:
           - Sid: PublicReadGetObject
             Effect: Allow
             Principal: '*'
             Action: 's3:GetObject'
             Resource: !Join ['', ['arn:aws:s3:::', !Ref FrontendBucket, '/*']]
+            Condition:
+              Bool:
+                aws:SecureTransport: 'true'
 
   # ------------------------------------------------------------
   # CodeBuild - Backend

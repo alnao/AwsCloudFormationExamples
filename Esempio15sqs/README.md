@@ -20,7 +20,7 @@ Creazione di una semplice cosa SQS con due lambda che scrivono e leggono element
   ```
   sam validate
   sam build
-  sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket formazione-alberto
+  sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket cloudformation-alnao
   sam deploy --template-file .\packagedV1.yaml --stack-name Esempio15sqs --capabilities CAPABILITY_IAM 
   ```
 * Comandi per la gestione della coda con le API REST

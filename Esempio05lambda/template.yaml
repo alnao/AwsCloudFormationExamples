@@ -84,16 +84,23 @@ Resources:
                 Action:
                   - 's3:GetBucketNotification'
                   - 's3:PutBucketNotification'
+                  - 's3:GetObject'
                 Resource: !Join
-                - ''
-                - - 'arn:aws:s3:::'
-                  - !Ref BucketName
+                  - ''
+                  - - 'arn:aws:s3:::'
+                    - !Ref BucketName
+                    - '/*'
               - Effect: Allow
                 Action:
                   - 'logs:CreateLogGroup'
                   - 'logs:CreateLogStream'
                   - 'logs:PutLogEvents'
                 Resource: 'arn:aws:logs:*:*:*'
+Tags:
+  - Key: "StackName"
+    Value: !Ref AWS::StackName
+  - Key: "Project"
+    Value: "Esempio05lambda"
 Outputs:
   StackName:
     Description: Deployed StackName for update

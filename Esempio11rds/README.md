@@ -26,7 +26,7 @@ Verificare anche la guida sul [tipo di istanze](https://docs.aws.amazon.com/Amaz
   ```
   sam validate
   sam build
-  sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket formazione-alberto
+  sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket cloudformation-alnao
   sam deploy --template-file .\packagedV1.yaml --stack-name Es11Rds --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND  --parameter-overrides DBUsername=alnao SSHLocation='0.0.0.0/0' VpcId=vpc-xxx PrivateSubnet1=subnet-xxx PrivateSubnet2=subnet-xxx
   ```
   nota: --capabilities CAPABILITY_IAM e CAPABILITY_AUTO_EXPAND sono obbligatori per le regole IAM

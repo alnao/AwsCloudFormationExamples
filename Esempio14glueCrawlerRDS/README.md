@@ -77,7 +77,7 @@ Documentazione di [Glue-job](https://docs.aws.amazon.com/AWSCloudFormation/lates
     ```
     sam validate
     sam build
-    sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket formazione-alberto
+    sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket cloudformation-alnao
     sam deploy --template-file .\packagedV1.yaml --stack-name Esempio14glueCrawlerRDS  --capabilities CAPABILITY_IAM --parameter-overrides VpcId=vpc-0013c2751d04a7413 PrivateSubnet1=subnet-0ca3ce54f35c3d3ef PrivateSubnet2=subnet-08dbf4b5fed6a83b2
 
     aws s3 cp ./glue/glue_esempio14.py s3://formazione-sftp-simulator/CODE/glue/glue_esempio14.py

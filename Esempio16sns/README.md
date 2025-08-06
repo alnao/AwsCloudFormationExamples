@@ -40,7 +40,7 @@ Creazione di un topic SNS che invia i messaggi ad una coda SQS che invoca una la
   ```
   sam validate
   sam build
-  sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket formazione-alberto
+  sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket cloudformation-alnao
   sam deploy --template-file .\packagedV1.yaml --stack-name Esempio16sns  --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND
   ```
 * Comando per la rimozione dello stack

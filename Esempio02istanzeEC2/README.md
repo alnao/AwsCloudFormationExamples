@@ -40,7 +40,7 @@ Documentazione [CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/la
     ```
     sam validate
     sam build
-    sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket formazione-alberto
+    sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket cloudformation-alnao
     sam deploy --template-file .\packagedV1.yaml --stack-name Esempio02istanzeEC2 --parameter-overrides KeyName=xxxx VpcId=vpc-xxxx SubnetId=subnet-xxx
 
     ```
@@ -56,7 +56,7 @@ Documentazione [CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/la
     Vedere sezione dedicata per tutti i dettagli, il comando di pacakge in questo caso è necessario perchè lo stack è annidato!
     ```
     sam build
-    sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket formazione-alberto
+    sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket cloudformation-alnao
     sam deploy --template-file .\packagedV1.yaml --stack-name Esempio02istanzeEC2 --parameter-overrides KeyName=xxx VpcId=vpc-xxx SubnetId=subnet-xxx WithMetadata=true 
     ```
     

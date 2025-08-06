@@ -58,11 +58,9 @@ Parameters:
     Type: String
     Default: "aurora-mysql"
     AllowedValues:
-      - "mysql"
-      - "postgres"
       - "aurora-mysql"
       - "aurora-postgresql"
-    Description: "Motore del database RDS"
+    Description: "Motore del database Aurora"
 #  RDSEngineVersion:
 #    Type: String
 #    Default: "8.0.28"
@@ -154,12 +152,12 @@ Parameters:
     Description: "Tag identificativo per tutte le risorse di esempio 12"
 
 Conditions:
-  IsPostgres: !Equals [!Ref RDSEngine, "postgres"]
   IsAuroraMySQL: !Equals [!Ref RDSEngine, "aurora-mysql"]
   IsAuroraPostgres: !Equals [!Ref RDSEngine, "aurora-postgresql"]
   IsAurora: !Or [!Condition IsAuroraMySQL, !Condition IsAuroraPostgres]
-  IsRDSInstance: !Not [!Condition IsAurora]
-  UseAuroraServerlessV2: !And [!Condition IsAurora, !Equals [!Ref AuroraServerlessV2, "true"]]
+  UseAuroraServerlessV2: !Equals [!Ref AuroraServerlessV2, "true"]
+  EnableEventBridgeCondition: !Equals [!Ref EnableEventBridge, "true"]
+  EnableAPICondition: !Equals [!Ref EnableAPI, "true"]
 
 Resources:
   S3Bucket:
@@ -225,7 +223,7 @@ Resources:
 
   DecompressZipEventRule:
     Type: AWS::Events::Rule
-    Condition: EnableEventBridge
+    Condition: EnableEventBridgeCondition
     Properties:
       Description: "EventBridge rule to trigger DecompressLambda on ZIP file upload"
       EventPattern:
@@ -327,30 +325,32 @@ Resources:
         - Key: esempio-12
           Value: !Ref TagEsempio12
 
-  RDSDatabase:
-    Type: AWS::RDS::DBInstance
-    Condition: IsRDSInstance
-    Properties:
-      DBName: !Ref RDSDatabaseName
-      DBInstanceIdentifier: !Sub "${AWS::StackName}-rds-instance"
-      AllocatedStorage: !Ref RDSAllocatedStorage
-      DBInstanceClass: !Ref RDSInstanceClass
-      Engine: !Ref RDSEngine
-      MasterUsername: !Ref RDSMasterUsername
-      MasterUserPassword: !Ref RDSMasterUserPassword
-      MultiAZ: false
-      PubliclyAccessible: false
-      StorageType: gp2
-      BackupRetentionPeriod: 7
-      DeleteAutomatedBackups: false
-      DeletionProtection: true
-      Port: !If [IsPostgres, 5432, 3306]
-      VPCSecurityGroups: 
-        - !Ref RDSSecurityGroup
-      DBSubnetGroupName: !Ref RDSSubnetGroup
-      Tags:
-        - Key: esempio-12
-          Value: !Ref TagEsempio12
+# nota: se non si usa Aurora Serverless, si può usare RDSDatabase come risorsa principale con RDS MySql o RDS Postgres
+#  RDSDatabase:
+#    Type: AWS::RDS::DBInstance
+#    Condition: IsRDSInstance
+#    Properties:
+#      DBName: !Ref RDSDatabaseName
+#      DBInstanceIdentifier: !Sub "${AWS::StackName}-rds-instance"
+#      AllocatedStorage: !Ref RDSAllocatedStorage
+#      DBInstanceClass: !Ref RDSInstanceClass
+#      Engine: !Ref RDSEngine
+#      MasterUsername: !Ref RDSMasterUsername
+#      MasterUserPassword: !Ref RDSMasterUserPassword
+#      MultiAZ: false
+#      PubliclyAccessible: false
+#      StorageType: gp2
+#      BackupRetentionPeriod: 7
+#      DeleteAutomatedBackups: false
+#      DeletionProtection: true
+#      Port: !If [IsPostgres, 5432, 3306]
+#      VPCSecurityGroups: 
+#        - !Ref RDSSecurityGroup
+#      DBSubnetGroupName: !Ref RDSSubnetGroup
+#      Tags:
+#        - Key: esempio-12
+#          Value: !Ref TagEsempio12
+
   RDSSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
     Properties:
@@ -443,7 +443,7 @@ Resources:
 
   ApiGateway:
     Type: AWS::Serverless::Api
-    Condition: EnableAPI
+    Condition: EnableAPICondition
     DependsOn: 
       - ApiGatewayAccountConfig
       - LambdaExecutionRole
@@ -572,8 +572,8 @@ Resources:
       Environment:
         Variables:
           S3_BUCKET_NAME: !Ref S3Bucket
-          RDS_HOST: !If [IsAurora, !GetAtt RDSCluster.Endpoint.Address, !GetAtt RDSDatabase.Endpoint.Address]
-          RDS_PORT: !If [IsAurora, !GetAtt RDSCluster.Endpoint.Port, !GetAtt RDSDatabase.Endpoint.Port]
+          RDS_HOST: !GetAtt RDSCluster.Endpoint.Address
+          RDS_PORT: !GetAtt RDSCluster.Endpoint.Port
           RDS_DATABASE_NAME: !Ref RDSDatabaseName
           RDS_TABLE_NAME: !Ref RDSTableName
           DYNAMO_TABLE_NAME: !Ref DynamoTableName
@@ -600,8 +600,8 @@ Resources:
       CodeUri: ./lambda
       Environment:
         Variables:
-          RDS_HOST: !If [IsAurora, !GetAtt RDSCluster.Endpoint.Address, !GetAtt RDSDatabase.Endpoint.Address]
-          RDS_PORT: !If [IsAurora, !GetAtt RDSCluster.Endpoint.Port, !GetAtt RDSDatabase.Endpoint.Port]
+          RDS_HOST: !GetAtt RDSCluster.Endpoint.Address
+          RDS_PORT: !GetAtt RDSCluster.Endpoint.Port
           RDS_DATABASE_NAME: !Ref RDSDatabaseName
           RDS_TABLE_NAME: !Ref RDSTableName
           RDS_ENGINE: !Ref RDSEngine
@@ -710,11 +710,22 @@ Resources:
                 Resource:
                   - !Sub "arn:aws:s3:::${S3Bucket}"
                   - !Sub "arn:aws:s3:::${S3Bucket}/*"
+# versione RDS-MySQL
+#              - Effect: Allow
+#                Action:
+#                  - rds-data:ExecuteStatement
+#                  - rds-data:BatchExecuteStatement
+#                Resource: !Sub "arn:aws:rds:${AWS::Region}:${AWS::AccountId}:db:${RDSDatabase}"
               - Effect: Allow
                 Action:
-                  - rds-data:ExecuteStatement
-                  - rds-data:BatchExecuteStatement
-                Resource: !Sub "arn:aws:rds:${AWS::Region}:${AWS::AccountId}:db:${RDSDatabase}"
+                  - rds-db:connect
+                Resource: 
+                  - !Sub "arn:aws:rds-db:${AWS::Region}:${AWS::AccountId}:dbuser:${RDSClusterResourceId}/${AuroraDBUser}"
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: 
+                  - !Ref RDSSecret
               - Effect: Allow
                 Action:
                   - dynamodb:PutItem
@@ -1015,7 +1026,7 @@ Resources:
 Outputs:
   ApiGatewayUrl:
     Description: "URL dell'API Gateway"
-    Value: !If [EnableAPI, !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}", "DISABLED"]
+    Value: !If [EnableAPICondition, !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}", "DISABLED"]
   S3BucketName:
     Description: "Nome del bucket S3"
     Value: !Ref S3Bucket
@@ -1023,14 +1034,14 @@ Outputs:
     Description: "ARN del bucket S3"
     Value: !GetAtt S3Bucket.Arn
   RDSEndpoint:
-    Description: "Endpoint del database RDS"
-    Value: !If [IsAurora, !GetAtt RDSCluster.Endpoint.Address, !GetAtt RDSDatabase.Endpoint.Address]
+    Description: "Endpoint del database Aurora"
+    Value: !GetAtt RDSCluster.Endpoint.Address
   RDSPort:
-    Description: "Porta del database RDS"
-    Value: !If [IsAurora, !GetAtt RDSCluster.Endpoint.Port, !GetAtt RDSDatabase.Endpoint.Port]
+    Description: "Porta del database Aurora"
+    Value: !GetAtt RDSCluster.Endpoint.Port
   RDSClusterArn:
-    Description: "ARN del cluster RDS (se Aurora)"
-    Value: !If [IsAurora, !GetAtt RDSCluster.Arn, "N/A"]
+    Description: "ARN del cluster Aurora"
+    Value: !GetAtt RDSCluster.Arn
   RDSDatabaseArn:
     Description: "ARN dell'istanza RDS (se non Aurora)"
     Value: !If [IsRDSInstance, !GetAtt RDSDatabase.Arn, "N/A"]

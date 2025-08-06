@@ -21,7 +21,7 @@ Parameters:
   DestBucket:
     Type: String
     Description: Bucket destinazione
-    Default: formazione-alberto
+    Default: cloudformation-alnao
 #  DestFileName:
 #    Type: String
 #    Description: Source Path solo il nome del file

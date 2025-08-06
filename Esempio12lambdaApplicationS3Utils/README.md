@@ -45,14 +45,19 @@ Questo template CloudFormation implementa una soluzione serverless per la gestio
 
 
 ## CloudFormation
-
+* Comandi per recuperare:
+    ```
+    DEFAULT_VPC=$(aws ec2 describe-vpcs --filters "Name=is-default,Values=true" --query 'Vpcs[0].VpcId' --output text 2>/dev/null)
+    SUBNET_LIST1=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=$DEFAULT_VPC" --query 'Subnets[*].[SubnetId,AvailabilityZone][0][0]' --output text)
+    SUBNET_LIST2=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=$DEFAULT_VPC" --query 'Subnets[*].[SubnetId,AvailabilityZone][1][0]' --output text)
+    ```
 * Comandi per la creazione:
     ```
     sam validate
     sam build
-    sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket formazione-alberto
-    sam deploy --template-file packagedV1.yaml --stack-name Esempio12lambdaApplicationS3Utils --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND  --parameter-overrides VpcId=vpc-xxx Subnet1=subnet-xxx Subnet2=subnet-xxx SftpUsername=xxx SftpHost=xxx.xxx.xxx.xxx SftpPrivateKeyParam=/xxx/key
-
+    sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket cloudformation-alnao
+    sam deploy --template-file packagedV1.yaml --stack-name Esempio12lambdaApplicationS3Utils --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND  --parameter-overrides VpcId="$DEFAULT_VPC" Subnet1="$SUBNET_LIST1" Subnet2="$SUBNET_LIST1" SftpUsername=xxx SftpHost=xxx.xxx.xxx.xxx SftpPrivateKeyParam=/xxx/key
+    ```
 * Comandi per il caricamento via CLI
     ```
     aws s3 cp ./test.zip s3://es12-application/INPUT/test.zip

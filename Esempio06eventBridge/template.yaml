@@ -14,7 +14,7 @@ Parameters:
   DestBucket:
     Type: String
     Description: Source Bucket 1
-    Default: formazione-alberto
+    Default: cloudformation-alnao
   DestPath:
     Type: String
     Description: Source Path

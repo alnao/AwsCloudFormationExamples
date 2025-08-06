@@ -24,7 +24,7 @@ Documentazione [CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/la
     ```
     sam validate
     sam build
-    sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket formazione-alberto
+    sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket cloudformation-alnao
     sam deploy --template-file .\packagedV1.yaml --stack-name Esempio24ecs  --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND  --parameter-overrides VpcId=vpc-0013c2751d04a7413 PublicSubnet1=subnet-051a66ef02691b734  PublicSubnet2=subnet-0b6f53c0291c13f02 PrivateSubnet1=subnet-0ca3ce54f35c3d3ef PrivateSubnet2=subnet-08dbf4b5fed6a83b2
     
     ```

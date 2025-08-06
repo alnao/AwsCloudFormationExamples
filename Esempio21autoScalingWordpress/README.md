@@ -38,7 +38,7 @@ Documentazione [CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/la
     ```
     sam validate
     sam build
-    sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket formazione-alberto
+    sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket cloudformation-alnao
     sam deploy --template-file .\packagedV1.yaml --stack-name Esempio21autoscalingGroupWordpress --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND  --parameter-overrides KeyName=xxx VpcId=vpc-xxx PublicSubnet1=subnet-xxx  PublicSubnet2=subnet-xxx PrivateSubnet1=subnet-xxx PrivateSubnet2=subnet-xxx
     ```
     *Nota*: `--capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND` sono obbligatori per le regole IAM e CloudFormation presenti nei template    

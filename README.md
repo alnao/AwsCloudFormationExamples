@@ -70,9 +70,11 @@ AWS CloudFormation Examples by [AlNao](https://www.alnao.it)
 - 25 **VPC & Client Vpn Endpoint**: template che crea una VPC usando un template AWS ufficiale e un Client-Vpn-Endpoint
 - 26 **Blockchain**: template che crea usa Lambda e Dynamo per creare una piccola blockchain con algormitmo *proof of work* con difficoltà molto bassa
 - 27 **EKS**: template che crea un cluster e un nodo EKR con l'esecuzione di un microservizio java che si collega ad un database Mysql-RDS
-- 28 **CodePipeline**: template che crea una PipeLine di deploy CICD usando GitHub e docker (ECR & ECS): *non funziona molto bene ma non riesco a capire perchè la PipeLine rimane appesa in CREATE_IN_PROGRESS*. Presente anche uno script sh che usa il AWS CLI come alternativa funzionante.
-- 29 **GraphQL**: *esempio in fase di sviluppo*
+- 28 **CodePipeline**: template che crea una PipeLine di deploy CICD usando GitHub e docker (ECR & ECS): *non funziona molto bene ma non riesco a capire perchè la PipeLine rimane appesa in CREATE_IN_PROGRESS*. Presente anche uno script sh che usa il AWS CLI come alternativa funzionante
+- 29 **GraphQL**: template che crea una infrastruttura che frutta il protocollo GraphQL che espone una *Lista Note* con AppSync, DynamoDB e Interfaccia Web
+- 30 **WebSocket**: *esempio in fase di sviluppo* Gioco *indovina il numero* con alcuni servizi esposti con WebSocket
 - 99: template e file vari *abbandonati a se stessi*
+
 
 # Note su CloudFormation & YAML
 Facendo riferimento alla [documentazione ufficiale](https://docs.aws.amazon.com/cloudformation/), CloudFormation è un servizio **Iaac** dichiarativo in YAML (è possibile usare anche JSON *ma meglio non usarlo*). La base della sintassi di CloudFormation in YAML può essere riassunta in questi punti:

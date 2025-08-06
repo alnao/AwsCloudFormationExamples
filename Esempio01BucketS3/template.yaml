@@ -26,6 +26,11 @@ Resources:
       NotificationConfiguration:
         EventBridgeConfiguration:
           EventBridgeEnabled: true
+      Tags:
+        - Key: Project
+          Value: Esempio01BucketS3
+        - Key: "StackName"
+          Value: !Ref AWS::StackName
 #blocco Outputs
 Outputs:
   BucketName:

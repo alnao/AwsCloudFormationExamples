@@ -23,6 +23,9 @@ Resources:
         - AttributeName: index
           KeyType: HASH
       BillingMode: PAY_PER_REQUEST
+      Tags:
+        - Key: Project
+          Value: Esempio26blockchainLambda
 
   TransactionsTable:
     Type: AWS::DynamoDB::Table
@@ -50,6 +53,9 @@ Resources:
           Projection:
             ProjectionType: ALL
       BillingMode: PAY_PER_REQUEST
+      Tags:
+        - Key: Project
+          Value: Esempio26blockchainLambda
 
   # Lambda Functions
   AddTransactionFunction:
@@ -625,6 +631,9 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Tags:
+        - Key: Project
+          Value: Esempio26blockchainLambda
       Policies:
         - PolicyName: DynamoDBAccess
           PolicyDocument:

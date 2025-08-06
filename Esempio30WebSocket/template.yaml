@@ -118,13 +118,7 @@ Resources:
     Properties:
       CodeUri: functions_flat/
       Handler: connect.lambda_handler
-      Events:
-        Connect:
-          Type: Api
-          Properties:
-            Path: /connect
-            Method: GET
-            RestApiId: !Ref GameWebSocketApi
+      # Rimosso evento Api: la route WebSocket è gestita tramite Integration e Route
       Environment:
         Variables:
           PLAYERS_TABLE: !Ref PlayersTableName
@@ -135,13 +129,7 @@ Resources:
     Properties:
       CodeUri: functions_flat/
       Handler: disconnect.lambda_handler
-      Events:
-        Disconnect:
-          Type: Api
-          Properties:
-            Path: /disconnect
-            Method: GET
-            RestApiId: !Ref GameWebSocketApi
+      # Rimosso evento Api: la route WebSocket è gestita tramite Integration e Route
       Environment:
         Variables:
           PLAYERS_TABLE: !Ref PlayersTableName
@@ -272,6 +260,30 @@ Resources:
         - DynamoDBCrudPolicy:
             TableName: !Ref PlayersTableName
         - AWSLambdaBasicExecutionRole
+
+  ### === Integrations === ###
+  WebSocketConnectIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref GameWebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt WebSocketConnectFunction.Arn
+      IntegrationMethod: POST
+      PayloadFormatVersion: "2.0"
+
+  WebSocketDisconnectIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref GameWebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt WebSocketDisconnectFunction.Arn
+      IntegrationMethod: POST
+      PayloadFormatVersion: "2.0"
+
+  ServerlessRestApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref StageName
 
   ### === Outputs === ###
 Outputs:

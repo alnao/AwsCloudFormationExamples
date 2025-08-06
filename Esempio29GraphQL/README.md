@@ -1,7 +1,5 @@
 # Esempio29GraphQL - Lista Note con AppSync, DynamoDB e Interfaccia Web
-
-*Esempio in fase di sviluppo*
-- ora voglio un Esempio29GraphQL dove crei una "listaNote", compreso database per salvare e una piccola interfaccia per lavorarci. scrivimi un README prendendo spunto da un altro esempio
+Voglio un Esempio29GraphQL dove crei una "listaNote", compreso database per salvare e una piccola interfaccia per lavorarci. scrivimi un README prendendo spunto da un altro esempio
 
 
 Questo esempio mostra come creare una semplice applicazione "listaNote" utilizzando AWS AppSync (GraphQL), DynamoDB e una piccola interfaccia web statica.
@@ -15,14 +13,46 @@ Questo esempio mostra come creare una semplice applicazione "listaNote" utilizza
 - **Resolver** per le operazioni di query, inserimento e cancellazione note
 - **Interfaccia web** (`index.html`) per interagire con l'API
 
-## Deploy
-1. **Deploy del template CloudFormation**
-   - Carica e avvia `template.yaml` tramite la console AWS CloudFormation o AWS CLI.
-2. **Recupera i parametri di output**
-   - Dopo il deploy, prendi l'endpoint GraphQL (`GraphQLApiUrl`) e la API Key (`GraphQLApiKey`) dagli output dello stack.
-3. **Configura l'interfaccia web**
-   - Apri `index.html` e sostituisci i valori di `API_URL` e `API_KEY` con quelli ottenuti dagli output.
-   - Puoi pubblicare la pagina su S3 static website hosting o aprirla localmente nel browser.
+## Deploy CloudFormation
+* Comani per la creazione dello stack:
+  ```
+  sam build
+  sam deploy --stack-name Esempio29GraphQL --capabilities CAPABILITY_NAMED_IAM --region eu-central-1
+  aws cloudformation describe-stacks --stack-name Esempio29GraphQL
+  ```
+* Comandi per invocare il GraphQL con Curl:
+  ```
+  aws cloudformation describe-stacks --stack-name Esempio29GraphQL --query "Stacks[0].Outputs"
+  API_URL="<GraphQLApiUrl dagli output>"
+  API_KEY="<GraphQLApiKey dagli output>"
+  curl -X POST "$API_URL" \
+    -H "x-api-key: $API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"query":"query { getNote { id testo } }"}'
+  curl -X POST "$API_URL" \
+    -H "x-api-key: $API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"query":"mutation { addNota(testo: \"Test nota da CLI\") { id testo } }"}'
+  curl -X POST "$API_URL" \
+    -H "x-api-key: $API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"query":"mutation { addNota(testo: \"Test nota da CLI\") { id testo } }"}'
+  curl -X POST "$API_URL" \
+    -H "x-api-key: $API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"query":"mutation { deleteNota(id: \"<ID_NOTA>\") }"}'
+  ```
+* Comandi rimozione tutto
+    ```
+    sam delete --stack-name Esempio29GraphQL --region eu-central-1
+    ```
+* Configura l'interfaccia web:
+   - Aprire `index.html` e sostituire i valori di `API_URL` e `API_KEY` con quelli ottenuti dagli output del template.
+    ```
+    const API_URL = 'INSERISCI_ENDPOINT_GRAPHQL';
+    const API_KEY = 'INSERISCI_API_KEY';
+    ```
+   - Pubblicare la pagina su S3 static website hosting o aprirla localmente nel browser.
 
 
 ## Schema GraphQL
@@ -55,3 +85,14 @@ type Mutation {
     - **Storage**: trascurabile per poche note.
   - **Altri costi**: eventuale S3 per hosting statico (free tier 5 GB/mese), traffico dati trascurabile per uso demo.
   - Al termine, eliminare lo stack CloudFormation per evitare costi ricorrenti.
+
+
+# AlNao.it
+Nessun contenuto in questo repository è stato creato con IA o automaticamente, tutto il codice è stato scritto con molta pazienza da Alberto Nao. Se il codice è stato preso da altri siti/progetti è sempre indicata la fonte. Per maggior informazioni visitare il sito [alnao.it](https://www.alnao.it/).
+
+## License
+Public projects 
+<a href="https://it.wikipedia.org/wiki/GNU_General_Public_License"  valign="middle"><img src="https://img.shields.io/badge/License-GNU-blue" style="height:22px;"  valign="middle"></a> 
+*Free Software!*
+
+

@@ -8,7 +8,7 @@ Parameters:
     Description: Nome della GraphQL API
   TableName:
     Type: String
-    Default: listaNote
+    Default: esempio29-listaNote
     Description: Nome della tabella DynamoDB
 
 Resources:
@@ -17,6 +17,9 @@ Resources:
     Properties:
       Name: !Ref ApiName
       AuthenticationType: API_KEY
+      Tags:
+        - Key: Project
+          Value: Esempio29GraphQL
 
   GraphQLSchema:
     Type: AWS::AppSync::GraphQLSchema
@@ -38,11 +41,20 @@ Resources:
           query: Query
           mutation: Mutation
         }
+#      Tags:
+#        - Key: Project
+#          Value: Esempio29GraphQL
 
   GraphQLApiKey:
     Type: AWS::AppSync::ApiKey
     Properties:
       ApiId: !GetAtt GraphQLApi.ApiId
+# il valore è calcolato così:
+# date -d "+7 days" +%s
+      Expires: 1754760363 #non funziona: !Sub "{{resolve:timestamp: +7d}}"
+#      Tags:
+#        - Key: Project
+#          Value: Esempio29GraphQL
 
   NoteTable:
     Type: AWS::DynamoDB::Table
@@ -55,17 +67,23 @@ Resources:
         - AttributeName: id
           KeyType: HASH
       BillingMode: PAY_PER_REQUEST
+      Tags:
+        - Key: Project
+          Value: Esempio29GraphQL
 
   DataSourceDynamo:
     Type: AWS::AppSync::DataSource
     Properties:
       ApiId: !GetAtt GraphQLApi.ApiId
-      Name: NoteTableDS
+      Name: NoteTableDataSource
       Type: AMAZON_DYNAMODB
       DynamoDBConfig:
         TableName: !Ref NoteTable
         AwsRegion: !Ref AWS::Region
       ServiceRoleArn: !GetAtt AppSyncDynamoRole.Arn
+#      Tags:
+#        - Key: Project
+#          Value: Esempio29GraphQL
 
   AppSyncDynamoRole:
     Type: AWS::IAM::Role
@@ -89,6 +107,9 @@ Resources:
                   - dynamodb:Scan
                   - dynamodb:DeleteItem
                 Resource: !GetAtt NoteTable.Arn
+      Tags:
+        - Key: Project
+          Value: Esempio29GraphQL
 
   ResolverGetNote:
     Type: AWS::AppSync::Resolver
@@ -96,7 +117,7 @@ Resources:
       ApiId: !GetAtt GraphQLApi.ApiId
       TypeName: Query
       FieldName: getNote
-      DataSourceName: !Ref DataSourceDynamo
+      DataSourceName: !GetAtt DataSourceDynamo.Name
       RequestMappingTemplate: |
         {
           "version": "2017-02-28",
@@ -111,7 +132,7 @@ Resources:
       ApiId: !GetAtt GraphQLApi.ApiId
       TypeName: Mutation
       FieldName: addNota
-      DataSourceName: !Ref DataSourceDynamo
+      DataSourceName: !GetAtt DataSourceDynamo.Name
       RequestMappingTemplate: |
         {
           "version": "2017-02-28",
@@ -135,7 +156,7 @@ Resources:
       ApiId: !GetAtt GraphQLApi.ApiId
       TypeName: Mutation
       FieldName: deleteNota
-      DataSourceName: !Ref DataSourceDynamo
+      DataSourceName: !GetAtt DataSourceDynamo.Name
       RequestMappingTemplate: |
         {
           "version": "2017-02-28",
@@ -157,3 +178,9 @@ Outputs:
   DynamoTableName:
     Description: Nome della tabella DynamoDB
     Value: !Ref NoteTable
+  GraphQLApiId:
+    Description: ID della GraphQL API
+    Value: !GetAtt GraphQLApi.ApiId
+  AwsRegion:
+    Description: Regione AWS
+    Value: !Ref AWS::Region

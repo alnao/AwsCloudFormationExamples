@@ -12,7 +12,7 @@ Documentazione di [CloudFront](https://docs.aws.amazon.com/AWSCloudFormation/lat
     ```
     sam validate --lint
     sam build
-    sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket formazione-alberto
+    sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket cloudformation-alnao
     sam deploy --template-file packagedV1.yaml --stack-name Esempio04cloudFront
     ```
 * Comandi per il carico della pagina con invalidazione della distribuzione con aggiornamento della cache

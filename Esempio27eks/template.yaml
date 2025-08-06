@@ -47,6 +47,12 @@ Parameters:
     Type: List<AWS::EC2::Subnet::Id>
     Description: Select at least 2 subnets from your default VPC in different AZs
 
+  MySQLMasterUserPassword:
+    Type: String
+    NoEcho: true
+    Description: Password for MySQL master user
+    Default: AlNaoBellissimo123!
+
 Resources:
   # Security Group per EKS
   ControlPlaneSecurityGroup:
@@ -180,7 +186,7 @@ Resources:
       Engine: mysql
       EngineVersion: 8.0.35
       MasterUsername: root
-      MasterUserPassword: alnaoMeraviglioso
+      MasterUserPassword: !Ref MySQLMasterUserPassword
       AllocatedStorage: 20
       StorageType: gp2
       DBSubnetGroupName: !Ref DBSubnetGroup
@@ -194,6 +200,8 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${ClusterName}-mysql
+        - Key: Project
+          Value: Esempio27eks
 
 Outputs:
   ClusterName:

@@ -4,38 +4,37 @@
 
 ## Struttura e Componenti del Progetto
 1. CloudFormation Template (template.yaml)
-  - Definisce tutte le risorse AWS necessarie: DynamoDB, Lambda, API Gateway REST e WebSocket.
-  - Parametrizzazione dei nomi delle tabelle e dello stage per ambienti multipli.
-  - Runtime Lambda impostato a Python 3.11, architettura ARM64 per efficienza.
-  - Gestione centralizzata delle variabili d’ambiente per ogni funzione.
+    - Definisce tutte le risorse AWS necessarie: DynamoDB, Lambda, API Gateway REST e WebSocket.
+    - Parametrizzazione dei nomi delle tabelle e dello stage per ambienti multipli.
+    - Runtime Lambda impostato a Python 3.11, architettura ARM64 per efficienza.
+    - Gestione centralizzata delle variabili d’ambiente per ogni funzione.
 2. DynamoDB Tables
-  - PlayersTable: memorizza i dati dei giocatori (nickname, stato, numero scelto, ecc.).
-  - MatchesTable: storico dei match e delle giocate.
-  - LogsTable: logging centralizzato di tutti gli eventi e azioni.
-  - BansTable: gestisce utenti bannati e motivazioni.
+    - PlayersTable: memorizza i dati dei giocatori (nickname, stato, numero scelto, ecc.).
+    - MatchesTable: storico dei match e delle giocate.
+    - LogsTable: logging centralizzato di tutti gli eventi e azioni.
+    - BansTable: gestisce utenti bannati e motivazioni.
 3. Lambda Functions (functions_flat/)
-  - connect.py / disconnect.py: gestiscono connessioni/disconnessioni WebSocket.
-  - set_number.py: permette al giocatore di scegliere/cambiare il proprio numero (con limite giornaliero).
-  - guess_number.py: logica di gioco per indovinare il numero di altri giocatori.
-  - get_scores.py: restituisce la classifica aggiornata.
-  - ban_user.py: endpoint di amministrazione per bannare utenti e notificare via WebSocket.
-  - get_match_log.py: API per consultare lo storico dei match.
-  - match_control.py: funzioni avanzate di amministrazione (broadcast messaggi, reset numeri).
-  - cleanup_inactive.py: Lambda per rimozione automatica utenti inattivi da più di X giorni.
-  - log_event.py: logging centralizzato su DynamoDB.
-  - utils.py: funzioni di utilità (validazione input, risposta HTTP uniforme, ecc.).
+    - connect.py / disconnect.py: gestiscono connessioni/disconnessioni WebSocket.
+    - set_number.py: permette al giocatore di scegliere/cambiare il proprio numero (con limite giornaliero).
+    - guess_number.py: logica di gioco per indovinare il numero di altri giocatori.
+    - get_scores.py: restituisce la classifica aggiornata.
+    - ban_user.py: endpoint di amministrazione per bannare utenti e notificare via WebSocket.
+    - get_match_log.py: API per consultare lo storico dei match.
+    - match_control.py: funzioni avanzate di amministrazione (broadcast messaggi, reset numeri).
+    - cleanup_inactive.py: Lambda per rimozione automatica utenti inattivi da più di X giorni.
+    - log_event.py: logging centralizzato su DynamoDB.
+    - utils.py: funzioni di utilità (validazione input, risposta HTTP uniforme, ecc.).
 4. API Gateway
-  - REST API: endpoint per amministrazione, classifica, storico match, ban, ecc.
-  - WebSocket API: comunicazione in tempo reale per notifiche di gioco e amministrazione.
+    - REST API: endpoint per amministrazione, classifica, storico match, ban, ecc.
+    - WebSocket API: comunicazione in tempo reale per notifiche di gioco e amministrazione.
 5. Sicurezza e Validazione
-  - Validazione input lato Lambda (nickname, numero scelto).
-  - Logging di tutte le azioni e errori.
-  - Gestione ban e utenti inattivi.
+    - Validazione input lato Lambda (nickname, numero scelto).
+    - Logging di tutte le azioni e errori.
+    - Gestione ban e utenti inattivi.
 6. Parametri e Configurazione
-  - Tutti i nomi delle risorse e limiti sono parametrizzati per ambienti diversi.
-  - Facile estensione per nuove funzioni o endpoint.
-7. Output
-  - URL WebSocket e REST API forniti come output del template per integrazione client.
+    - Tutti i nomi delle risorse e limiti sono parametrizzati per ambienti diversi.
+    - Facile estensione per nuove funzioni o endpoint.
+    - In Output gli URL WebSocket e REST API forniti come output del template per integrazione client.
 
 
 

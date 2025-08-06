@@ -42,7 +42,7 @@ Documentazione [CloudFormation](https://docs.aws.amazon.com/serverless-applicati
     ```
     sam validate
     sam build
-    sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket formazione-alberto
+    sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket cloudformation-alnao
     sam deploy --template-file packagedV1.yaml --stack-name Esempio10lambdaAuthorizer --capabilities CAPABILITY_IAM --parameter-overrides PasswordParam=S3cret!
 
     ```

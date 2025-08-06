@@ -33,7 +33,7 @@ Resources:
     ```
     sam validate
     sam build
-    sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket formazione-alberto
+    sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket cloudformation-alnao
     sam deploy --template-file .\packagedV1.yaml --stack-name Esempio25vpcEndpoint  --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM 
     
     ```
