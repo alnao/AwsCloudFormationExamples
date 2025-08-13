@@ -2,6 +2,7 @@ import os
 import json
 import boto3
 from utils import response
+import datetime
 
 dynamodb = boto3.resource('dynamodb')
 players_table = dynamodb.Table(os.environ.get('PLAYERS_TABLE', 'Players'))
@@ -19,8 +20,12 @@ def send_ws_to_all(message):
 def reset_all_numbers():
     response_scan = players_table.scan()
     players = response_scan.get('Items', [])
+    # Calcola timestamp di 24 ore e 1 minuto fa
+    dt = datetime.datetime.utcnow() - datetime.timedelta(hours=24, minutes=1)
+    last_update_value = dt.isoformat()
     for p in players:
         p['number'] = 0
+        p['lastUpdate'] = last_update_value
         players_table.put_item(Item=p)
 
 def lambda_handler(event, context):

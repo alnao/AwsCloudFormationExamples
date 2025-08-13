@@ -85,9 +85,49 @@ Se un utente si collega, imposta un numero e poi chiude il browser senza fare di
     - Se si ricollega con lo stesso nickname, può continuare a giocare (a meno che non sia stato eliminato/bannato nel frattempo). Non riceverà più notifiche WebSocket finché non si riconnette.
     - Se vuoi che la disconnessione comporti anche la rimozione del giocatore dal gioco, dovresti modificare la Lambda di disconnect per eliminare il record del giocatore, ma così facendo perderesti la persistenza tra sessioni.
     - In sintesi: il giocatore resta nel gioco (con nickname e numero) anche se chiude il browser senza fare disconnect, ma non riceverà più notifiche in tempo reale finché non si riconnette.
+7) eseguite diverse modifiche al template per permessi mancanti, stage websocket mancante (che poi funzia), tante bestemmie e tante discussioni con una IA spesso con allucinazioni!
 
 
 # Deploy
+* Comandi per la creazione dell'esempio
+    ```
+    sam validate
+    sam build
+    sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket cloudformation-alnao
+    sam deploy --template-file packagedV1.yaml --stack-name Esempio30WebSocket --capabilities CAPABILITY_IAM
+    ```
+* Comando per verificare il template:
+    ```
+    aws cloudformation describe-stacks --stack-name Esempio30WebSocket --query "Stacks[0].Outputs"
+    ```
+* Comandi per caricare i file nel bucket
+    ```
+    BUCKET_NAME="esempio30-website-bucket"
+    aws s3 cp ./frontend "s3://$BUCKET_NAME/" --recursive
+        # Se vuoi che i file siano pubblicamente leggibili (già consentito dalla bucket policy, ma puoi forzare i permessi oggetto):
+        aws s3 cp ./frontend "s3://$BUCKET_NAME/" --recursive --acl public-read
+    ```
+* Comandi per la rimozione totale
+    ```
+    # 1. Svuota il bucket S3 (necessario prima di eliminare lo stack)
+    BUCKET_NAME="esempio30-website-bucket"
+    aws s3 rm "s3://$BUCKET_NAME" --recursive
+    
+    # 2. Elimina lo stack CloudFormation (elimina tutte le risorse)
+    aws cloudformation delete-stack --stack-name Esempio30WebSocket
+    
+    # 3. Verifica che lo stack sia stato eliminato
+    aws cloudformation describe-stacks --stack-name Esempio30WEbSocket
+    # Dovrebbe restituire errore "does not exist" quando completato
+    
+    # 4. Opzionale: elimina manualmente eventuali log group rimasti
+    aws logs describe-log-groups --log-group-name-prefix "/aws/apigateway/" --query "logGroups[].logGroupName" --output text | tr '\t' '\n' | xargs -r -n 1 aws logs delete-log-group --log-group-name
+    aws logs describe-log-groups --log-group-name-prefix "/aws/lambda/" --query "logGroups[].logGroupName" --output text | tr '\t' '\n' | xargs -r -n 1 aws logs delete-log-group --log-group-name
+    ```
 
-aws cloudformation describe-stacks --stack-name esempio30-stack --query "Stacks[0].Outputs"
+Fermato che
+- il sito web su s3 non funziona
+- chiamato con http da errore cors
+- websocket non funziona e mi dice {"message": "Forbidden", "connectionId":"PQjywckZFiACGxA=", "requestId":"PQjywHUIliAET_w="}
+
 

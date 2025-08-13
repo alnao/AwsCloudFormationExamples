@@ -5,23 +5,23 @@
 # Assicurati di avere curl installato e di sostituire <API_ID> e
 # Sostituisci con il tuo endpoint REST API (senza slash finale)
 
-STACK_NAME="esempio30-stack"
+STACK_NAME="Esempio30WebSocket"
 API_ID=$(aws cloudformation describe-stacks --stack-name $STACK_NAME \
   --query "Stacks[0].Outputs[?OutputKey=='RestApiId'].OutputValue" --output text)
 REGION=$(aws configure get region)
 
-API_URL="https://${API_ID}.execute-api.${REGION}.amazonaws.com/esempio30"
+API_URL="https://${API_ID}.execute-api.${REGION}.amazonaws.com/Prod"
 echo "API_URL: $API_URL"
 
 echo "== Test: set_number =="
 curl -s -X POST "$API_URL/set-number" \
   -H "Content-Type: application/json" \
-  -d '{"nickname":"player1","number":123456}'
+  -d '{"nickname":"player3","number":42}'
 
 echo -e "\n\n== Test: guess_number =="
 curl -s -X POST "$API_URL/guess-number" \
   -H "Content-Type: application/json" \
-  -d '{"nickname":"player1","target":"player2","guess":654321}'
+  -d '{"attacker":"player3","guess":12}'
 
 echo -e "\n\n== Test: get_scores =="
 curl -s -X GET "$API_URL/scores"

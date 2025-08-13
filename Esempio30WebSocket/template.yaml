@@ -5,7 +5,7 @@ Description: Sistema di gioco con WebSocket, REST API e logging completo
 Parameters:
   StageName:
     Type: String
-    Default: esempio30
+    Default: Prod
     Description: Nome dello stage API Gateway
   PlayersTableName:
     Type: String
@@ -45,6 +45,81 @@ Globals:
 
 Resources:
 
+  ### === IAM Roles === ###
+  ApiGatewayCloudWatchRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+      Tags:
+        - Key: "StackName"
+          Value: !Ref AWS::StackName
+        - Key: "Project"
+          Value: "Esempio30WebSocket"
+
+  ApiGatewayAccount:
+    Type: AWS::ApiGateway::Account
+    Properties:
+      CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchRole.Arn
+
+  WebSocketLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Scan
+                  - dynamodb:Query
+                Resource:
+                  - !GetAtt PlayersTable.Arn
+                  - !GetAtt LogsTable.Arn
+                  - !GetAtt MatchesTable.Arn
+                  - !GetAtt BansTable.Arn
+        - PolicyName: WebSocketManageConnections
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - execute-api:ManageConnections
+                Resource: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${GameWebSocketApi}/*"
+        - PolicyName: CloudWatchLogsAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:DescribeLogGroups
+                  - logs:DescribeLogStreams
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/apigateway/*"
+
   ### === DynamoDB Tables === ###
   PlayersTable:
     Type: AWS::DynamoDB::Table
@@ -57,6 +132,11 @@ Resources:
       KeySchema:
         - AttributeName: nickname
           KeyType: HASH
+      Tags:
+        - Key: "StackName"
+          Value: !Ref AWS::StackName
+        - Key: "Project"
+          Value: "Esempio30WebSocket"
 
   MatchesTable:
     Type: AWS::DynamoDB::Table
@@ -69,6 +149,11 @@ Resources:
       KeySchema:
         - AttributeName: matchId
           KeyType: HASH
+      Tags:
+        - Key: "StackName"
+          Value: !Ref AWS::StackName
+        - Key: "Project"
+          Value: "Esempio30WebSocket"
 
   LogsTable:
     Type: AWS::DynamoDB::Table
@@ -81,6 +166,11 @@ Resources:
       KeySchema:
         - AttributeName: timestamp
           KeyType: HASH
+      Tags:
+        - Key: "StackName"
+          Value: !Ref AWS::StackName
+        - Key: "Project"
+          Value: "Esempio30WebSocket"
 
   BansTable:
     Type: AWS::DynamoDB::Table
@@ -93,6 +183,23 @@ Resources:
       KeySchema:
         - AttributeName: nickname
           KeyType: HASH
+      Tags:
+        - Key: "StackName"
+          Value: !Ref AWS::StackName
+        - Key: "Project"
+          Value: "Esempio30WebSocket"
+
+  ### === CloudWatch Logs === ###
+  WebSocketApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/apigateway/${GameWebSocketApi}"
+      RetentionInDays: 14
+      Tags:
+        - Key: "StackName"
+          Value: !Ref AWS::StackName
+        - Key: "Project"
+          Value: "Esempio30WebSocket"
 
   ### === WebSocket API === ###
   GameWebSocketApi:
@@ -116,27 +223,55 @@ Resources:
       RouteKey: $disconnect
       Target: !Sub integrations/${WebSocketDisconnectIntegration}
 
+  GameWebSocketStage:
+    Type: AWS::ApiGatewayV2::Stage
+    DependsOn: 
+      - WebSocketApiLogGroup
+      - ApiGatewayAccount
+    Properties:
+      ApiId: !Ref GameWebSocketApi
+      StageName: !Ref StageName
+      AutoDeploy: true
+      AccessLogSettings:
+        DestinationArn: !GetAtt WebSocketApiLogGroup.Arn
+        Format: '{"requestId":"$context.requestId","requestTime":"$context.requestTime","status":"$context.status","responseLength":"$context.responseLength","integrationLatency":"$context.integrationLatency","responseLatency":"$context.responseLatency","integrationStatus":"$context.integrationStatus","integrationError":"$context.integrationError","errorMessage":"$context.errorMessage","errorResponseType":"$context.errorResponseType","route":"$context.route","ip":"$context.identity.sourceIp","userAgent":"$context.identity.userAgent","connectionId":"$context.connectionId"}'
+      DefaultRouteSettings:
+        LoggingLevel: ERROR
+        DataTraceEnabled: true
+        DetailedMetricsEnabled: true
+      Tags:
+        StackName: !Ref AWS::StackName
+        Project: "Esempio30WebSocket"
+
   ### === Lambda Functions (WebSocket) === ###
   WebSocketConnectFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: functions
       Handler: connect.lambda_handler
+      Role: !GetAtt WebSocketLambdaRole.Arn
       # Rimosso evento Api: la route WebSocket è gestita tramite Integration e Route
       Environment:
         Variables:
           PLAYERS_TABLE: !Ref PlayersTableName
           WS_ENDPOINT: !Sub "https://${GameWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
+      Tags:
+        StackName: !Ref AWS::StackName
+        Project: "Esempio30WebSocket"
 
   WebSocketDisconnectFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: functions
       Handler: disconnect.lambda_handler
+      Role: !GetAtt WebSocketLambdaRole.Arn
       # Rimosso evento Api: la route WebSocket è gestita tramite Integration e Route
       Environment:
         Variables:
           PLAYERS_TABLE: !Ref PlayersTableName
+      Tags:
+        StackName: !Ref AWS::StackName
+        Project: "Esempio30WebSocket"
 
   SetNumberFunction:
     Type: AWS::Serverless::Function
@@ -151,7 +286,20 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref PlayersTableName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref LogsTableName
         - AWSLambdaBasicExecutionRole
+      Tags:
+        StackName: !Ref AWS::StackName
+        Project: "Esempio30WebSocket"
+      Events:
+        GetScores:
+          Type: Api
+          Properties:
+            Path: /set-number
+            Method: POST
+            RestApiId: !Ref ServerlessRestApi
+            Stage: !Ref StageName
 
   GuessNumberFunction:
     Type: AWS::Serverless::Function
@@ -173,7 +321,21 @@ Resources:
             TableName: !Ref MatchesTableName
         - DynamoDBCrudPolicy:
             TableName: !Ref LogsTableName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref BansTableName
         - AWSLambdaBasicExecutionRole
+      Tags:
+        StackName: !Ref AWS::StackName
+        Project: "Esempio30WebSocket"
+      Events:
+        GetScores:
+          Type: Api
+          Properties:
+            Path: /guess-number
+            Method: POST
+            RestApiId: !Ref ServerlessRestApi
+            Stage: !Ref StageName
+
 
   ### === Lambda Functions (REST API) === ###
   GetScoresFunction:
@@ -190,10 +352,15 @@ Resources:
           Properties:
             Path: /scores
             Method: GET
+            RestApiId: !Ref ServerlessRestApi
+            Stage: !Ref StageName
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref PlayersTableName
         - AWSLambdaBasicExecutionRole
+      Tags:
+        StackName: !Ref AWS::StackName
+        Project: "Esempio30WebSocket"
 
   BanUserFunction:
     Type: AWS::Serverless::Function
@@ -212,6 +379,8 @@ Resources:
           Properties:
             Path: /admin/ban
             Method: POST
+            RestApiId: !Ref ServerlessRestApi
+            Stage: !Ref StageName
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref BansTableName
@@ -220,6 +389,14 @@ Resources:
         - DynamoDBCrudPolicy:
             TableName: !Ref PlayersTableName
         - AWSLambdaBasicExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action:
+                - execute-api:ManageConnections
+              Resource: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${GameWebSocketApi}/*"
+      Tags:
+        StackName: !Ref AWS::StackName
+        Project: "Esempio30WebSocket"
 
   GetMatchHistoryFunction:
     Type: AWS::Serverless::Function
@@ -232,6 +409,8 @@ Resources:
           Properties:
             Path: /admin/matches
             Method: GET
+            RestApiId: !Ref ServerlessRestApi
+            Stage: !Ref StageName
       Environment:
         Variables:
           MATCHES_TABLE: !Ref MatchesTableName
@@ -242,6 +421,9 @@ Resources:
         - DynamoDBReadPolicy:
             TableName: !Ref LogsTableName
         - AWSLambdaBasicExecutionRole
+      Tags:
+        StackName: !Ref AWS::StackName
+        Project: "Esempio30WebSocket"
 
   MatchControlFunction:
     Type: AWS::Serverless::Function
@@ -258,15 +440,44 @@ Resources:
           Properties:
             Path: /admin/broadcast
             Method: POST
+            RestApiId: !Ref ServerlessRestApi
+            Stage: !Ref StageName
         ResetNumbers:
           Type: Api
           Properties:
             Path: /admin/reset-numbers
             Method: POST
+            RestApiId: !Ref ServerlessRestApi
+            Stage: !Ref StageName
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref PlayersTableName
         - AWSLambdaBasicExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action:
+                - execute-api:ManageConnections
+              Resource: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${GameWebSocketApi}/*"
+      Tags:
+        StackName: !Ref AWS::StackName
+        Project: "Esempio30WebSocket"
+
+  ### === Lambda Permissions === ###
+  WebSocketConnectPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref WebSocketConnectFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${GameWebSocketApi}/*"
+
+  WebSocketDisconnectPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref WebSocketDisconnectFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${GameWebSocketApi}/*"
 
   ### === Integrations === ###
   WebSocketConnectIntegration:
@@ -276,7 +487,8 @@ Resources:
       IntegrationType: AWS_PROXY
       IntegrationUri: !GetAtt WebSocketConnectFunction.Arn
       IntegrationMethod: POST
-      PayloadFormatVersion: "2.0"
+      PayloadFormatVersion: "1.0"
+      #AWS::ApiGatewayV2::Integration per una Lambda, ma API Gateway WebSocket supporta solo la versione 1.0 per integrazioni Lambda.
 
   WebSocketDisconnectIntegration:
     Type: AWS::ApiGatewayV2::Integration
@@ -285,12 +497,18 @@ Resources:
       IntegrationType: AWS_PROXY
       IntegrationUri: !GetAtt WebSocketDisconnectFunction.Arn
       IntegrationMethod: POST
-      PayloadFormatVersion: "2.0"
+      PayloadFormatVersion: "1.0" 
+      #AWS::ApiGatewayV2::Integration per una Lambda, ma API Gateway WebSocket supporta solo la versione 1.0 per integrazioni Lambda.
 
   ServerlessRestApi:
     Type: AWS::Serverless::Api
     Properties:
       StageName: !Ref StageName
+      Tags:
+        - Key: "StackName"
+          Value: !Ref AWS::StackName
+        - Key: "Project"
+          Value: "Esempio30WebSocket"
 
   FrontendBucket:
     Type: AWS::S3::Bucket
@@ -299,8 +517,25 @@ Resources:
       WebsiteConfiguration:
         IndexDocument: index.html
         ErrorDocument: error.html
-      AccessControl: PublicRead
-
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: false
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: false
+      MetricsConfigurations:
+        - Id: EntireBucket
+      Tags:
+        - Key: "StackName"
+          Value: !Ref AWS::StackName
+        - Key: "Project"
+          Value: "Esempio30WebSocket"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
   FrontendBucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
@@ -312,6 +547,10 @@ Resources:
             Principal: '*'
             Action: s3:GetObject
             Resource: !Sub "arn:aws:s3:::${FrontendBucket}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: 'true'
+
 
   ### === Outputs === ###
 Outputs:
@@ -333,3 +572,6 @@ Outputs:
   FrontendBucketWebsiteURL:
     Description: URL pubblico del sito statico frontend
     Value: !GetAtt FrontendBucket.WebsiteURL
+  WebSocketLogGroupName:
+    Description: Nome del CloudWatch Log Group per WebSocket API
+    Value: !Ref WebSocketApiLogGroup

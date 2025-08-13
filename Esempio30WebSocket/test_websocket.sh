@@ -3,12 +3,12 @@
 
 # npm install -g wscat
 
-STACK_NAME="esempio30-stack"
+STACK_NAME="Esempio30WebSocket"
 REGION=$(aws configure get region)
 WS_API_ID=$(aws cloudformation describe-stacks --stack-name $STACK_NAME \
   --query "Stacks[0].Outputs[?OutputKey=='WebSocketApiId'].OutputValue" --output text)
 
-WS_URL="wss://${WS_API_ID}.execute-api.${REGION}.amazonaws.com/esempio30"
+WS_URL="wss://${WS_API_ID}.execute-api.${REGION}.amazonaws.com/Prod/"
 
 # Controlla che wscat sia installato
 if ! command -v wscat &> /dev/null; then
@@ -20,13 +20,13 @@ echo "== Invio automatico di ping, broadcast e set_number =="
 wscat -c "$WS_URL" <<EOF
 {"action":"ping"}
 {"action":"broadcast","text":"Ciao a tutti!"}
-{"action":"set_number","nickname":"player1","number":123456}
+{"action":"set_number","nickname":"player1","number":24}
 EOF
 
 echo "== Connessione interattiva a $WS_URL =="
 echo "Premi Ctrl+C per uscire. Puoi digitare/incollare altri messaggi JSON. Esempi:"
 echo '{"action":"reset_numbers"}'
-echo '{"action":"guess_number","attacker":"player1","target":"player2","guess":654321}'
+echo '{"action":"guess_number","attacker":"player1",guess":52}'
 echo
 
 wscat -c "$WS_URL"

@@ -2,6 +2,7 @@ import os
 import json
 import boto3
 from utils import response
+import datetime
 
 dynamodb = boto3.resource('dynamodb')
 bans_table = dynamodb.Table(os.environ.get('BANS_TABLE', 'Bans'))

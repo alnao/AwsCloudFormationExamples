@@ -41,7 +41,10 @@ def lambda_handler(event, context):
                 if (now - last_dt).total_seconds() < 86400:
                     return response(429, error="Puoi cambiare il numero solo una volta ogni 24 ore.")
             # Controllo che il numero non sia già stato scelto da altri
-            scan = players_table.scan(ProjectionExpression='number, nickname')
+            scan = players_table.scan(
+                ProjectionExpression='#num, nickname',
+                ExpressionAttributeNames={'#num': 'number'}
+            )
             for p in scan.get('Items', []):
                 if p['number'] == number and p['nickname'] != nickname:
                     return response(409, error=f"Numero già scelto da un altro giocatore ({p['nickname']}). Scegli un altro numero.")
@@ -53,7 +56,10 @@ def lambda_handler(event, context):
             return response(200, message=f"Numero cambiato in {number}")
         else:
             # Controllo che il numero non sia già stato scelto da altri
-            scan = players_table.scan(ProjectionExpression='number, nickname')
+            scan = players_table.scan(
+                ProjectionExpression='#num, nickname',
+                ExpressionAttributeNames={'#num': 'number'}
+            )
             for p in scan.get('Items', []):
                 if p['number'] == number:
                     return response(409, error=f"Numero già scelto da un altro giocatore ({p['nickname']}). Scegli un altro numero.")
