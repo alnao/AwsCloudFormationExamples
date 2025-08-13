@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Indovina il Numero - Benvenuto!</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .hero {
+      background: linear-gradient(135deg, #6dd5ed 0%, #2193b0 100%);
+      color: white;
+      border-radius: 1rem;
+      padding: 3rem 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 24px rgba(33,147,176,0.15);
+    }
+    .btn-lg {
+      font-size: 1.3rem;
+      padding: 0.75rem 2rem;
+    }
+  </style>
+</head>
+<body class="bg-light">
+  <div class="container py-5">
+    <div class="hero text-center mb-5">
+      <h1 class="display-4 mb-3">Indovina il Numero</h1>
+      <p class="lead mb-4">Un mini-gioco multiplayer dove la strategia e l'intuizione sono tutto!<br>
+      Scegli il tuo numero segreto, prova a indovinare quello degli altri e scala la classifica.<br>
+      Gioca subito o consulta la classifica e lo storico match!</p>
+      <div class="d-flex justify-content-center gap-4">
+        <a href="game.html" class="btn btn-success btn-lg shadow">Gioca ora</a>
+        <a href="user.html" class="btn btn-primary btn-lg shadow">Classifica & Storico</a>
+      </div>
+    </div>
+    <div class="row justify-content-center">
+      <div class="col-md-8">
+        <div class="card border-info mb-3">
+          <div class="card-header bg-info text-white">Come funziona?</div>
+          <div class="card-body">
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item">Iscriviti con un nickname e scegli un numero segreto.</li>
+              <li class="list-group-item">Prova a indovinare il numero degli altri giocatori.</li>
+              <li class="list-group-item">Ogni volta che indovini, guadagni un punto e il giocatore "beccato" viene eliminato!</li>
+              <li class="list-group-item">Puoi cambiare numero solo un numero limitato di volte al giorno.</li>
+              <li class="list-group-item">Ricevi notifiche in tempo reale sulle tue azioni e sullo stato del gioco.</li>
+              <li class="list-group-item">Consulta la classifica e lo storico dei match in qualsiasi momento.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="alert alert-warning text-center mt-4">
+          <strong>Nota:</strong> Questo gioco è un esempio didattico realizzato con AWS CloudFormation, Lambda, DynamoDB, API Gateway e S3 Static Website Hosting.
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer class="text-center text-muted py-4">
+    &copy; 2025 Indovina il Numero &middot; Powered by AWS & Bootstrap
+  </footer>
+</body>
+</html>

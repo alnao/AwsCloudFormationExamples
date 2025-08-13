@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gioca - Indovina il Numero</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+  <div class="container py-4">
+    <h1 class="mb-4">Gioca a "Indovina il Numero"</h1>
+    <div class="row g-4">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">Connessione</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label for="nickname" class="form-label">Nickname</label>
+              <input type="text" class="form-control" id="nickname" placeholder="Il tuo nickname">
+            </div>
+            <button class="btn btn-success" id="connectBtn" onclick="connectUser()">Connettiti</button>
+            <div id="connectResult" class="mt-2"></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">Notifiche</div>
+          <div class="card-body">
+            <button class="btn btn-outline-secondary mb-2" id="wsBtn" onclick="connectWS()" disabled>Connetti WebSocket</button>
+            <div id="wsStatus" class="mb-2"></div>
+            <div id="wsMessages" style="max-height:200px; overflow:auto;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row g-4 mt-2">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">Iscrizione / Cambio Numero</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label for="number" class="form-label">Numero segreto</label>
+              <input type="number" class="form-control" id="number" placeholder="Scegli un numero (1-999999)">
+            </div>
+            <button class="btn btn-success" id="setNumberBtn" onclick="setNumber()" disabled>Iscriviti / Cambia Numero</button>
+            <div id="setNumberResult" class="mt-2"></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">Indovina il Numero</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label for="guess" class="form-label">Numero da indovinare</label>
+              <input type="number" class="form-control" id="guess" placeholder="Prova a indovinare un numero">
+            </div>
+            <button class="btn btn-primary" id="guessBtn" onclick="guessNumber()" disabled>Tenta!</button>
+            <div id="guessResult" class="mt-2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row g-4 mt-2">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">Classifica</div>
+          <div class="card-body">
+            <button class="btn btn-outline-primary mb-2" onclick="getScores()">Aggiorna Classifica</button>
+            <div id="scores" style="max-height:200px; overflow:auto;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Inserisci qui l'endpoint REST API e WebSocket (es: https://xxxxxx.execute-api.eu-west-1.amazonaws.com/esempio30)
+    const API_URL = '';
+    const WS_URL = '';
+    let ws = null;
+    let userConnected = false;
+
+    function connectUser() {
+      const nickname = document.getElementById('nickname').value.trim();
+      if (!nickname) {
+        document.getElementById('connectResult').innerText = 'Inserisci un nickname valido.';
+        return;
+      }
+      document.getElementById('nickname').setAttribute('readonly', 'readonly');
+      document.getElementById('connectBtn').disabled = true;
+      document.getElementById('wsBtn').disabled = false;
+      document.getElementById('setNumberBtn').disabled = false;
+      document.getElementById('guessBtn').disabled = false;
+      userConnected = true;
+      document.getElementById('connectResult').innerText = 'Nickname impostato. Ora puoi giocare!';
+      connectWS(); // Connessione WebSocket automatica
+    }
+
+    function disconnectWS() {
+      if (ws) {
+        ws.close();
+        ws = null;
+        document.getElementById('wsStatus').innerText = 'WebSocket disconnesso.';
+        // Disabilita tutte le azioni finché non si riconnette
+        document.getElementById('nickname').removeAttribute('readonly');
+        document.getElementById('connectBtn').disabled = false;
+        document.getElementById('wsBtn').disabled = true;
+        document.getElementById('setNumberBtn').disabled = true;
+        document.getElementById('guessBtn').disabled = true;
+        userConnected = false;
+        document.getElementById('connectResult').innerText = 'Disconnesso. Devi riconnetterti con un nickname.';
+      }
+    }
+
+    function setNumber() {
+      if (!userConnected) return;
+      const nickname = document.getElementById('nickname').value;
+      const number = parseInt(document.getElementById('number').value);
+      fetch(`${API_URL}/set-number`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname, number })
+      })
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById('setNumberResult').innerText = data.message || data.error || JSON.stringify(data);
+      });
+    }
+
+    function guessNumber() {
+      if (!userConnected) return;
+      const nickname = document.getElementById('nickname').value;
+      const guess = parseInt(document.getElementById('guess').value);
+      fetch(`${API_URL}/guess-number`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ attacker: nickname, guess })
+      })
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById('guessResult').innerText = data.message || data.error || JSON.stringify(data);
+      });
+    }
+
+    function getScores() {
+      fetch(`${API_URL}/scores`)
+      .then (r => r.json())
+      .then(data => {
+        const div = document.getElementById('scores');
+        if (Array.isArray(data.message)) {
+          div.innerHTML = '<ol class="list-group list-group-numbered">' + data.message.map(p => `<li class="list-group-item d-flex justify-content-between align-items-center"><span>${p.nickname}</span><span class="badge bg-primary rounded-pill">${p.score}</span></li>`).join('') + '</ol>';
+        } else {
+          div.innerText = data.error || JSON.stringify(data);
+        }
+      });
+    }
+
+    function connectWS() {
+      if (!userConnected) return;
+      if (ws) { ws.close(); }
+      ws = new WebSocket(WS_URL);
+      document.getElementById('wsStatus').innerText = 'Connessione in corso...';
+      ws.onopen = () => {
+        document.getElementById('wsStatus').innerText = 'WebSocket connesso!';
+        const nickname = document.getElementById('nickname').value;
+        if (nickname) ws.send(JSON.stringify({ nickname }));
+      };
+      ws.onmessage = (event) => {
+        const msgDiv = document.getElementById('wsMessages');
+        msgDiv.innerHTML = `<div class='alert alert-info'>${event.data}</div>` + msgDiv.innerHTML;
+      };
+      ws.onclose = () => {
+        document.getElementById('wsStatus').innerText = 'WebSocket disconnesso.';
+      };
+      ws.onerror = (e) => {
+        document.getElementById('wsStatus').innerText = 'Errore WebSocket.';
+      };
+    }
+  </script>
+</body>
+</html>
+
+<!-- Aggiungi un pulsante per la disconnessione WebSocket -->
+<script>
+  // Aggiungi il pulsante nella sezione Notifiche
+  document.addEventListener('DOMContentLoaded', function() {
+    const wsBtn = document.getElementById('wsBtn');
+    if (wsBtn) {
+      const disconnectBtn = document.createElement('button');
+      disconnectBtn.className = 'btn btn-outline-danger mb-2 ms-2';
+      disconnectBtn.innerText = 'Disconnetti WebSocket';
+      disconnectBtn.onclick = disconnectWS;
+      wsBtn.parentNode.insertBefore(disconnectBtn, wsBtn.nextSibling);
+    }
+  });
+</script>

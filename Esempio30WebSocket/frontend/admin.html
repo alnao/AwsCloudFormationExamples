@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Indovina il Numero</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+  <div class="container py-4">
+    <h1 class="mb-4">Pannello Amministratore</h1>
+    <div class="row g-4">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">Broadcast</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label for="broadcastText" class="form-label">Messaggio</label>
+              <input type="text" class="form-control" id="broadcastText" placeholder="Messaggio da inviare a tutti">
+            </div>
+            <button class="btn btn-primary" onclick="sendBroadcast()">Invia Broadcast</button>
+            <div id="broadcastResult" class="mt-2"></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">Reset Numeri</div>
+          <div class="card-body">
+            <button class="btn btn-warning" onclick="resetNumbers()">Resetta tutti i numeri</button>
+            <div id="resetResult" class="mt-2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row g-4 mt-2">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">Ban Utente</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label for="banNickname" class="form-label">Nickname</label>
+              <input type="text" class="form-control" id="banNickname" placeholder="Nickname da bannare">
+            </div>
+            <div class="mb-3">
+              <label for="banReason" class="form-label">Motivazione</label>
+              <input type="text" class="form-control" id="banReason" placeholder="Motivazione del ban">
+            </div>
+            <button class="btn btn-danger" onclick="banUser()">Banna Utente</button>
+            <div id="banResult" class="mt-2"></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">Storico Match</div>
+          <div class="card-body">
+            <button class="btn btn-secondary" onclick="getMatchLog()">Visualizza Storico</button>
+            <div id="matchLog" class="mt-2" style="max-height:200px; overflow:auto;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Inserisci qui l'endpoint REST API (es: https://xxxxxx.execute-api.eu-west-1.amazonaws.com/esempio30)
+    const API_URL = '';
+
+    function sendBroadcast() {
+      const text = document.getElementById('broadcastText').value;
+      fetch(`${API_URL}/admin/broadcast`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'broadcast', text })
+      })
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById('broadcastResult').innerText = data.message || data.error || JSON.stringify(data);
+      });
+    }
+
+    function resetNumbers() {
+      fetch(`${API_URL}/admin/reset-numbers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reset_numbers' })
+      })
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById('resetResult').innerText = data.message || data.error || JSON.stringify(data);
+      });
+    }
+
+    function banUser() {
+      const nickname = document.getElementById('banNickname').value;
+      const reason = document.getElementById('banReason').value;
+      fetch(`${API_URL}/admin/ban`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname, reason })
+      })
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById('banResult').innerText = data.message || data.error || JSON.stringify(data);
+      });
+    }
+
+    function getMatchLog() {
+      fetch(`${API_URL}/admin/matches`)
+      .then(r => r.json())
+      .then(data => {
+        const logDiv = document.getElementById('matchLog');
+        if (Array.isArray(data.message)) {
+          logDiv.innerHTML = '<ul class="list-group">' + data.message.map(m => `<li class="list-group-item">${m.timestamp} - <b>${m.winner}</b> ha eliminato <b>${m.loser}</b> (${m.numberGuessed})</li>`).join('') + '</ul>';
+        } else {
+          logDiv.innerText = data.error || JSON.stringify(data);
+        }
+      });
+    }
+  </script>
+</body>
+</html>

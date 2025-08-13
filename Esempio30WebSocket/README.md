@@ -61,5 +61,33 @@
     - capito, voglio dei metodi: primo per inviare un messaggio a tutti gli utenti di tipo testuale, poi voglio uno per fare reset di tutti i numeri a zero così il gioco riparte da zero e ora nel template CloudFormation voglio aggiungere le chiamate ai metodi appena creati
     - il "prod" nelle API deve essere parametrico e valore di default "esempio30", modifica anche i valori di default delle tabelle dynamo e metti "esempio30-" prima dei valori, voglio usare python3.11
 3) aggiungi nel README.md spiegazione di ogni parte che abbiamo sviliuppato
+4) ho trovato un errore: nel guess_number togli il target perchè voglio che l'attacker provi con tutti i giocatori attivi (non bannati)
+    - nella guuess_number hai aggiunto tabelle che devo aggiungere anche nel template?
+        - e la BANS_TABLE ? 
+        - **allucinazione perchè si era perso questo parametro che aveva aggiunto nel python ma non nel template**
+    - con questo template mi controlli che tutte le lambda abbiano i parametri in Environment e che non usano i valori di default nel python ?
+    - nella set_number aggiungi contro che il numero non deve essere già presente, se già presente non fare nulla e ritorna errore perchè il giocatore non può entrare in partita
+    - nella guess voglio aggiungere un controllo che un utente può eseguire un numero massimo di chiamate MAX_CHANGES_PER_DAY = int(os.environ.get('MAX_CHANGES_PER_DAY', 5))
+    - nella set_number voglio che imponi il limite che si possa cambiare solo dopo le 24 ore dall'ultimo cambio
+5) ora, con tutti i files che hai, mi crei un piccolo frontend in html/javascript usando la libreria grafica bootstrap per l'amministratore, crea una cartella frontend con un file admin.html: Broadcast a tutti i giocatori, Reset di tutti i numeri, Ban di un utente (nickname e motivo) e Visualizzazione dello storico match
+    - ora vorrei una pagina user che visualizza tutti gli altri dati, cre un file admin.html sempre usando html/javascript e la libreria grafica bootstrap: Classifica aggiornata, Storico match, Lista giocatori attivi e Log eventi
+    - ora vorrei un file game.html che permetta da un giocatore di giocare
+    - modifica la game perchè prima un utente deve connettersi selezionando il suo nick, poi non può più modificarlo
+    - ora modifica in modo che la connectWS sia chiamata automaticamente quando le la connectUser va a buon fine, poi aggiungi anche la disconnect
+    - ok ma mi controlli che se uno chiama la disconnectWS poi non può fare altro e deve connectUser ?
+    - nel template aggiungi un Bucket dove caricare i file HTML e che siano esposti come sito web pubblico (senza cloudFront), grazie
+    - ora creami una bellissima index.html che pubblicizza questo gioco e che permetta di accedere al game.html e che permetta di accedere alla user.html , usa html/javascript con libreria grafica bootstrap, crea anche una error.html triste
+    
+6) analizza una cosa: se un utente si collega e imposta un numero ma poi chiude il browser senza fare disconnect, cosa succede?
+Se un utente si collega, imposta un numero e poi chiude il browser senza fare disconnect:
+    - La connessione WebSocket viene chiusa automaticamente dal browser: Se la tua Lambda associata alla route $disconnect di API Gateway è configurata correttamente, riceverà l’evento di disconnessione e potrà aggiornare lo stato del giocatore (es. rimuovere il connectionId dal record DynamoDB).
+    - Il giocatore rimane nella tabella: Il nickname, il numero e lo stato del giocatore restano salvati in DynamoDB. Il giocatore non viene eliminato solo perché ha chiuso il browser. Il giocatore risulta ancora “attivo” per il sistema, finché non viene eliminato da una regola di cleanup (es. inattività > X giorni) o da un altro giocatore che indovina il suo numero.
+    - Se si ricollega con lo stesso nickname, può continuare a giocare (a meno che non sia stato eliminato/bannato nel frattempo). Non riceverà più notifiche WebSocket finché non si riconnette.
+    - Se vuoi che la disconnessione comporti anche la rimozione del giocatore dal gioco, dovresti modificare la Lambda di disconnect per eliminare il record del giocatore, ma così facendo perderesti la persistenza tra sessioni.
+    - In sintesi: il giocatore resta nel gioco (con nickname e numero) anche se chiude il browser senza fare disconnect, ma non riceverà più notifiche in tempo reale finché non si riconnette.
 
+
+# Deploy
+
+aws cloudformation describe-stacks --stack-name esempio30-stack --query "Stacks[0].Outputs"
 

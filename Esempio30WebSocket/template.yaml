@@ -31,6 +31,10 @@ Parameters:
     Type: Number
     Default: 5
     Description: Numero massimo di modifiche del numero per giorno
+  FrontendBucketName:
+    Type: String
+    Default: esempio30-website-bucket
+    Description: Nome del bucket S3 per il sito statico frontend
 
 Globals:
   Function:
@@ -116,7 +120,7 @@ Resources:
   WebSocketConnectFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: functions_flat/
+      CodeUri: functions
       Handler: connect.lambda_handler
       # Rimosso evento Api: la route WebSocket è gestita tramite Integration e Route
       Environment:
@@ -127,7 +131,7 @@ Resources:
   WebSocketDisconnectFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: functions_flat/
+      CodeUri: functions
       Handler: disconnect.lambda_handler
       # Rimosso evento Api: la route WebSocket è gestita tramite Integration e Route
       Environment:
@@ -137,7 +141,7 @@ Resources:
   SetNumberFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: functions_flat/
+      CodeUri: functions
       Handler: set_number.lambda_handler
       Environment:
         Variables:
@@ -152,13 +156,16 @@ Resources:
   GuessNumberFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: functions_flat/
+      CodeUri: functions
       Handler: guess_number.lambda_handler
       Environment:
         Variables:
           PLAYERS_TABLE: !Ref PlayersTableName
           MATCHES_TABLE: !Ref MatchesTableName
           LOGS_TABLE: !Ref LogsTableName
+          BANS_TABLE: !Ref BansTableName
+          WS_ENDPOINT: !Sub "https://${GameWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
+          MAX_CHANGES_PER_DAY: !Ref MaxNumberChangesPerDay
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref PlayersTableName
@@ -172,7 +179,7 @@ Resources:
   GetScoresFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: functions_flat/
+      CodeUri: functions
       Handler: get_scores.lambda_handler
       Environment:
         Variables:
@@ -191,7 +198,7 @@ Resources:
   BanUserFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: functions_flat/
+      CodeUri: functions
       Handler: ban_user.lambda_handler
       Environment:
         Variables:
@@ -217,7 +224,7 @@ Resources:
   GetMatchHistoryFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: functions_flat/
+      CodeUri: functions
       Handler: get_match_log.lambda_handler
       Events:
         GetMatches:
@@ -239,7 +246,7 @@ Resources:
   MatchControlFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: functions_flat/
+      CodeUri: functions
       Handler: match_control.lambda_handler
       Environment:
         Variables:
@@ -285,12 +292,44 @@ Resources:
     Properties:
       StageName: !Ref StageName
 
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref FrontendBucketName
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+      AccessControl: PublicRead
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: '*'
+            Action: s3:GetObject
+            Resource: !Sub "arn:aws:s3:::${FrontendBucket}/*"
+
   ### === Outputs === ###
 Outputs:
   WebSocketURL:
     Description: URL della WebSocket API
     Value: !Sub "wss://${GameWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
-
   RestApiEndpoint:
     Description: Endpoint REST API
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
+  RestApiId:
+    Description: "API Gateway Rest API ID"
+    Value: !Ref ServerlessRestApi
+  WebSocketApiId:
+    Description: "API Gateway WebSocket API ID"
+    Value: !Ref GameWebSocketApi
+  ApiRegion:
+    Description: "AWS Region"
+    Value: !Ref AWS::Region
+  FrontendBucketWebsiteURL:
+    Description: URL pubblico del sito statico frontend
+    Value: !GetAtt FrontendBucket.WebsiteURL
