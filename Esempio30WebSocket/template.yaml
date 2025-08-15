@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Sistema di gioco con WebSocket, REST API e logging completo
+Description: AWS CloudFormation Examples by AlNao - 30 Sistema di gioco con WebSocket, REST API e logging
 
 Parameters:
   StageName:
@@ -106,7 +106,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - execute-api:ManageConnections
-                Resource: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${GameWebSocketApi}/*"
+                Resource: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocket}/*"
         - PolicyName: CloudWatchLogsAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -193,7 +193,7 @@ Resources:
   WebSocketApiLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub "/aws/apigateway/${GameWebSocketApi}"
+      LogGroupName: !Sub "/aws/apigateway/${WebSocket}"
       RetentionInDays: 14
       Tags:
         - Key: "StackName"
@@ -202,34 +202,45 @@ Resources:
           Value: "Esempio30WebSocket"
 
   ### === WebSocket API === ###
-  GameWebSocketApi:
+  WebSocket:
     Type: AWS::ApiGatewayV2::Api
     Properties:
-      Name: GameWebSocketApi
+      Name: !Sub "${AWS::StackName}-websocket"
       ProtocolType: WEBSOCKET
       RouteSelectionExpression: "$request.body.action"
+      Tags:
+        StackName: !Ref AWS::StackName
+        Project: "Esempio30WebSocket"
 
   WebSocketConnectRoute:
     Type: AWS::ApiGatewayV2::Route
     Properties:
-      ApiId: !Ref GameWebSocketApi
+      ApiId: !Ref WebSocket
       RouteKey: $connect
       Target: !Sub integrations/${WebSocketConnectIntegration}
 
   WebSocketDisconnectRoute:
     Type: AWS::ApiGatewayV2::Route
     Properties:
-      ApiId: !Ref GameWebSocketApi
+      ApiId: !Ref WebSocket
       RouteKey: $disconnect
       Target: !Sub integrations/${WebSocketDisconnectIntegration}
 
-  GameWebSocketStage:
+  # Route di default per messaggi senza action specifica (es. per nickname)
+  WebSocketDefaultRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocket
+      RouteKey: $default
+      Target: !Sub integrations/${WebSocketDefaultIntegration}
+
+  WebSocketStage:
     Type: AWS::ApiGatewayV2::Stage
     DependsOn: 
       - WebSocketApiLogGroup
       - ApiGatewayAccount
     Properties:
-      ApiId: !Ref GameWebSocketApi
+      ApiId: !Ref WebSocket
       StageName: !Ref StageName
       AutoDeploy: true
       AccessLogSettings:
@@ -254,7 +265,7 @@ Resources:
       Environment:
         Variables:
           PLAYERS_TABLE: !Ref PlayersTableName
-          WS_ENDPOINT: !Sub "https://${GameWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
+          WS_ENDPOINT: !Sub "https://${WebSocket}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
       Tags:
         StackName: !Ref AWS::StackName
         Project: "Esempio30WebSocket"
@@ -278,22 +289,17 @@ Resources:
     Properties:
       CodeUri: functions
       Handler: set_number.lambda_handler
+      Role: !GetAtt WebSocketLambdaRole.Arn
       Environment:
         Variables:
           PLAYERS_TABLE: !Ref PlayersTableName
           LOGS_TABLE: !Ref LogsTableName
           MAX_CHANGES_PER_DAY: !Ref MaxNumberChangesPerDay
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref PlayersTableName
-        - DynamoDBCrudPolicy:
-            TableName: !Ref LogsTableName
-        - AWSLambdaBasicExecutionRole
       Tags:
         StackName: !Ref AWS::StackName
         Project: "Esempio30WebSocket"
       Events:
-        GetScores:
+        SetNumber:
           Type: Api
           Properties:
             Path: /set-number
@@ -306,29 +312,20 @@ Resources:
     Properties:
       CodeUri: functions
       Handler: guess_number.lambda_handler
+      Role: !GetAtt WebSocketLambdaRole.Arn
       Environment:
         Variables:
           PLAYERS_TABLE: !Ref PlayersTableName
           MATCHES_TABLE: !Ref MatchesTableName
           LOGS_TABLE: !Ref LogsTableName
           BANS_TABLE: !Ref BansTableName
-          WS_ENDPOINT: !Sub "https://${GameWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
+          WS_ENDPOINT: !Sub "https://${WebSocket}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
           MAX_CHANGES_PER_DAY: !Ref MaxNumberChangesPerDay
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref PlayersTableName
-        - DynamoDBCrudPolicy:
-            TableName: !Ref MatchesTableName
-        - DynamoDBCrudPolicy:
-            TableName: !Ref LogsTableName
-        - DynamoDBCrudPolicy:
-            TableName: !Ref BansTableName
-        - AWSLambdaBasicExecutionRole
       Tags:
         StackName: !Ref AWS::StackName
         Project: "Esempio30WebSocket"
       Events:
-        GetScores:
+        GuessNumber:
           Type: Api
           Properties:
             Path: /guess-number
@@ -367,12 +364,13 @@ Resources:
     Properties:
       CodeUri: functions
       Handler: ban_user.lambda_handler
+      Role: !GetAtt WebSocketLambdaRole.Arn
       Environment:
         Variables:
           BANS_TABLE: !Ref BansTableName
           LOGS_TABLE: !Ref LogsTableName
           PLAYERS_TABLE: !Ref PlayersTableName
-          WS_ENDPOINT: !Sub "https://${GameWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
+          WS_ENDPOINT: !Sub "https://${WebSocket}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
       Events:
         BanUser:
           Type: Api
@@ -381,19 +379,6 @@ Resources:
             Method: POST
             RestApiId: !Ref ServerlessRestApi
             Stage: !Ref StageName
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref BansTableName
-        - DynamoDBCrudPolicy:
-            TableName: !Ref LogsTableName
-        - DynamoDBCrudPolicy:
-            TableName: !Ref PlayersTableName
-        - AWSLambdaBasicExecutionRole
-        - Statement:
-            - Effect: Allow
-              Action:
-                - execute-api:ManageConnections
-              Resource: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${GameWebSocketApi}/*"
       Tags:
         StackName: !Ref AWS::StackName
         Project: "Esempio30WebSocket"
@@ -430,10 +415,11 @@ Resources:
     Properties:
       CodeUri: functions
       Handler: match_control.lambda_handler
+      Role: !GetAtt WebSocketLambdaRole.Arn
       Environment:
         Variables:
           PLAYERS_TABLE: !Ref PlayersTableName
-          WS_ENDPOINT: !Sub "https://${GameWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
+          WS_ENDPOINT: !Sub "https://${WebSocket}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
       Events:
         Broadcast:
           Type: Api
@@ -449,15 +435,6 @@ Resources:
             Method: POST
             RestApiId: !Ref ServerlessRestApi
             Stage: !Ref StageName
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref PlayersTableName
-        - AWSLambdaBasicExecutionRole
-        - Statement:
-            - Effect: Allow
-              Action:
-                - execute-api:ManageConnections
-              Resource: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${GameWebSocketApi}/*"
       Tags:
         StackName: !Ref AWS::StackName
         Project: "Esempio30WebSocket"
@@ -469,7 +446,7 @@ Resources:
       FunctionName: !Ref WebSocketConnectFunction
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${GameWebSocketApi}/*"
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocket}/*"
 
   WebSocketDisconnectPermission:
     Type: AWS::Lambda::Permission
@@ -477,13 +454,22 @@ Resources:
       FunctionName: !Ref WebSocketDisconnectFunction
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${GameWebSocketApi}/*"
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocket}/*"
+
+  # Permission per la route di default
+  WebSocketDefaultPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref WebSocketConnectFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocket}/*"
 
   ### === Integrations === ###
   WebSocketConnectIntegration:
     Type: AWS::ApiGatewayV2::Integration
     Properties:
-      ApiId: !Ref GameWebSocketApi
+      ApiId: !Ref WebSocket
       IntegrationType: AWS_PROXY
       IntegrationUri: !GetAtt WebSocketConnectFunction.Arn
       IntegrationMethod: POST
@@ -493,22 +479,59 @@ Resources:
   WebSocketDisconnectIntegration:
     Type: AWS::ApiGatewayV2::Integration
     Properties:
-      ApiId: !Ref GameWebSocketApi
+      ApiId: !Ref WebSocket
       IntegrationType: AWS_PROXY
       IntegrationUri: !GetAtt WebSocketDisconnectFunction.Arn
       IntegrationMethod: POST
       PayloadFormatVersion: "1.0" 
       #AWS::ApiGatewayV2::Integration per una Lambda, ma API Gateway WebSocket supporta solo la versione 1.0 per integrazioni Lambda.
 
+  # Integration di default che gestisce i messaggi generici (es. nickname)
+  WebSocketDefaultIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocket
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt WebSocketConnectFunction.Arn
+      IntegrationMethod: POST
+      PayloadFormatVersion: "1.0"
+
+  CorsOptionsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions
+      Handler: cors_options.lambda_handler
+      Description: Risposta automatica alle richieste OPTIONS per CORS
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Tags:
+        StackName: !Ref AWS::StackName
+        Project: "Esempio30WebSocket"
+      Events:
+        CorsOptionsRoot:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: OPTIONS
+            RestApiId: !Ref ServerlessRestApi
+            Stage: !Ref StageName
+
   ServerlessRestApi:
     Type: AWS::Serverless::Api
     Properties:
+      Name: !Sub "${AWS::StackName}-apirest"
       StageName: !Ref StageName
+      Cors:
+        # AllowCredentials: true # Unable to add Cors configuration because 'AllowCredentials' can not be true when 'AllowOrigin' is "'*'" or not set
+        AllowMethods: "'POST, GET, DELETE, OPTIONS, PUT'"
+        AllowOrigin: "'*'" #occhio che AllowOrigin va senza S finale https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-api-corsconfiguration.html
+        AllowHeaders: "'*'"
+        MaxAge: "'600'"
       Tags:
         - Key: "StackName"
           Value: !Ref AWS::StackName
         - Key: "Project"
-          Value: "Esempio30WebSocket"
+          Value: !Sub "${AWS::StackName}ApiRest"
 
   FrontendBucket:
     Type: AWS::S3::Bucket
@@ -556,7 +579,7 @@ Resources:
 Outputs:
   WebSocketURL:
     Description: URL della WebSocket API
-    Value: !Sub "wss://${GameWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
+    Value: !Sub "wss://${WebSocket}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
   RestApiEndpoint:
     Description: Endpoint REST API
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
@@ -565,7 +588,7 @@ Outputs:
     Value: !Ref ServerlessRestApi
   WebSocketApiId:
     Description: "API Gateway WebSocket API ID"
-    Value: !Ref GameWebSocketApi
+    Value: !Ref WebSocket
   ApiRegion:
     Description: "AWS Region"
     Value: !Ref AWS::Region

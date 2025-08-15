@@ -72,7 +72,7 @@ AWS CloudFormation Examples by [AlNao](https://www.alnao.it)
 - 27 **EKS**: template che crea un cluster e un nodo EKR con l'esecuzione di un microservizio java che si collega ad un database Mysql-RDS
 - 28 **CodePipeline**: template che crea una PipeLine di deploy CICD usando GitHub e docker (ECR & ECS): *non funziona molto bene ma non riesco a capire perchè la PipeLine rimane appesa in CREATE_IN_PROGRESS*. Presente anche uno script sh che usa il AWS CLI come alternativa funzionante
 - 29 **GraphQL**: template che crea una infrastruttura che frutta il protocollo GraphQL che espone una *Lista Note* con AppSync, DynamoDB e Interfaccia Web
-- 30 **WebSocket**: *esempio in fase di sviluppo* Gioco *indovina il numero* con alcuni servizi esposti con WebSocket
+- 30 **WebSocket**: Gioco *indovina il numero* con alcuni servizi esposti con WebSocket (l'amministratore può inviare messaggi ai gicocatori in tempo reale!) e altri con API REST. *Questo gioco è un esempio didattico realizzato con i principali servizi AWS, il gioco non prevede nessun sistema di autenticazione/autorizzazione, coming soon?*
 - 99: template e file vari *abbandonati a se stessi*
 
 
@@ -263,10 +263,22 @@ To run:
 source aws_panoramic.bash
 ```
 
+
 # AlNao.it
-Nessun contenuto in questo repository è stato creato con IA o automaticamente, tutto il codice è stato scritto con molta pazienza da Alberto Nao. Se il codice è stato preso da altri siti/progetti è sempre indicata la fonte. Per maggior informazioni visitare il sito [alnao.it](https://www.alnao.it/).
+Tutti i codici sorgente e le informazioni presenti in questo repository sono frutto di un attento e paziente lavoro di sviluppo da parte di Alberto Nao, che si è impegnato a verificarne la correttezza nella misura massima possibile. Qualora parte del codice o dei contenuti sia stato tratto da fonti esterne, la relativa provenienza viene sempre citata, nel rispetto della trasparenza e della proprietà intellettuale. 
+
+
+Alcuni contenuti e porzioni di codice presenti in questo repository sono stati realizzati anche grazie al supporto di strumenti di intelligenza artificiale, il cui contributo ha permesso di arricchire e velocizzare la produzione del materiale. Ogni informazione e frammento di codice è stato comunque attentamente verificato e validato, con l’obiettivo di garantire la massima qualità e affidabilità dei contenuti offerti. 
+
+
+Per ulteriori dettagli, approfondimenti o richieste di chiarimento, si invita a consultare il sito [alnao.it](https://www.alnao.it/).
+
 
 ## License
 Public projects 
 <a href="https://it.wikipedia.org/wiki/GNU_General_Public_License"  valign="middle"><img src="https://img.shields.io/badge/License-GNU-blue" style="height:22px;"  valign="middle"></a> 
 *Free Software!*
+
+
+E' garantito il permesso di copiare, distribuire e/o modificare questo documento in base ai termini della GNU Free Documentation License, Versione 1.2 o ogni versione successiva pubblicata dalla Free Software Foundation. Permission is granted to copy, distribute and/or modify this document under the terms of the GNU Free Documentation License, Version 1.2 or any later version published by the Free Software Foundation.
+

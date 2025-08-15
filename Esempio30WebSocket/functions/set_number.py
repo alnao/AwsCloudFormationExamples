@@ -46,7 +46,7 @@ def lambda_handler(event, context):
                 ExpressionAttributeNames={'#num': 'number'}
             )
             for p in scan.get('Items', []):
-                if p['number'] == number and p['nickname'] != nickname:
+                if 'number' in p and p['number'] == number and p['nickname'] != nickname:
                     return response(409, error=f"Numero già scelto da un altro giocatore ({p['nickname']}). Scegli un altro numero.")
             # Aggiorna il numero e lastUpdate
             player['number'] = number
@@ -61,7 +61,7 @@ def lambda_handler(event, context):
                 ExpressionAttributeNames={'#num': 'number'}
             )
             for p in scan.get('Items', []):
-                if p['number'] == number:
+                if 'number' in p and p['number'] == number:
                     return response(409, error=f"Numero già scelto da un altro giocatore ({p['nickname']}). Scegli un altro numero.")
             # Nuovo giocatore
             now = datetime.datetime.utcnow()

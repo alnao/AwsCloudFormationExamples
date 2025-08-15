@@ -69,14 +69,19 @@ def lambda_handler(event, context):
                     'numberGuessed': guess
                 }
                 matches_table.put_item(Item=match_record)
-                players_table.delete_item(Key={'nickname': target_data['nickname']})
+                # Penalità: azzera numero, aggiorna lastUpdate, togli 10 punti (min 0)
+                dt_penalty = datetime.datetime.utcnow() - datetime.timedelta(hours=24, minutes=1)
+                target_data['number'] = 0
+                target_data['lastUpdate'] = dt_penalty.isoformat()
+                target_data['score'] = max(-1000, target_data.get('score', 0) - 3)
+                players_table.put_item(Item=target_data)
 
                 _log_event(attacker, f"Ha indovinato il numero di {target_data['nickname']}: {guess}")
-                _log_event(target_data['nickname'], f"È stato eliminato da {attacker}.")
+                _log_event(target_data['nickname'], f"Penalità: numero azzerato, -10 punti, lastUpdate retrodatato per indovinamento da {attacker}.")
 
                 # Invia notifica WebSocket
-                send_ws_notification(attacker_data.get('connectionId'), {"message": f"Hai indovinato! {target_data['nickname']} è stato eliminato."})
-                send_ws_notification(target_data.get('connectionId'), {"message": f"Sei stato eliminato da {attacker}."})
+                send_ws_notification(attacker_data.get('connectionId'), {"message": f"Hai indovinato! {target_data['nickname']} ha subito una penalità."})
+                send_ws_notification(target_data.get('connectionId'), {"message": f"Hai subito una penalità da {attacker}: numero azzerato, -10 punti."})
 
                 found = True
         if found:

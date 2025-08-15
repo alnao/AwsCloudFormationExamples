@@ -1,46 +1,142 @@
 # Esempio30WebSocket - Gioco ad "indovina il numero"
 
-*Esempio in fase di sviluppo*
+
+Questo gioco è un esempio didattico realizzato con i principali servizi AWS, l'esecuzione di questa infrastruttura su AWS potrebbe causare l'addebito dei servizi usati.
+
+
+Attenzione: Il gioco non prevede nessun sistema di autenticazione/autorizzazione.
+
+
+Esiste anche una versione sviluppata in Java di tipo Cloud-agnostic disponibile al repository
+```
+https://github.com/alnao/JavaSpringBootExample
+```
+
 
 ## Struttura e Componenti del Progetto
-1. CloudFormation Template (template.yaml)
-    - Definisce tutte le risorse AWS necessarie: DynamoDB, Lambda, API Gateway REST e WebSocket.
-    - Parametrizzazione dei nomi delle tabelle e dello stage per ambienti multipli.
+1. CloudFormation Template (`template.yaml`)
+    - Definisce tutte le risorse AWS necessarie: DynamoDB, Lambda, API Gateway REST e WebSocket, S3 per hosting statico.
+    - Parametrizzazione dei nomi delle tabelle, limiti e dello stage per ambienti multipli.
     - Runtime Lambda impostato a Python 3.11, architettura ARM64 per efficienza.
     - Gestione centralizzata delle variabili d’ambiente per ogni funzione.
+    - Policy IAM minime per ogni Lambda (DynamoDB, CloudWatch Logs, execute-api:ManageConnections).
+    - Lambda Permission per invocazione sicura da API Gateway.
+    - CloudWatch Log Group configurato per REST e WebSocket API.
 2. DynamoDB Tables
-    - PlayersTable: memorizza i dati dei giocatori (nickname, stato, numero scelto, ecc.).
-    - MatchesTable: storico dei match e delle giocate.
-    - LogsTable: logging centralizzato di tutti gli eventi e azioni.
-    - BansTable: gestisce utenti bannati e motivazioni.
-3. Lambda Functions (functions_flat/)
-    - connect.py / disconnect.py: gestiscono connessioni/disconnessioni WebSocket.
-    - set_number.py: permette al giocatore di scegliere/cambiare il proprio numero (con limite giornaliero).
-    - guess_number.py: logica di gioco per indovinare il numero di altri giocatori.
-    - get_scores.py: restituisce la classifica aggiornata.
-    - ban_user.py: endpoint di amministrazione per bannare utenti e notificare via WebSocket.
-    - get_match_log.py: API per consultare lo storico dei match.
-    - match_control.py: funzioni avanzate di amministrazione (broadcast messaggi, reset numeri).
-    - cleanup_inactive.py: Lambda per rimozione automatica utenti inattivi da più di X giorni.
-    - log_event.py: logging centralizzato su DynamoDB.
-    - utils.py: funzioni di utilità (validazione input, risposta HTTP uniforme, ecc.).
+    - `PlayersTable`: memorizza i dati dei giocatori (nickname, stato, numero scelto, ecc.).
+    - `MatchesTable`: storico dei match e delle giocate. Gestione conversione tipi numerici per compatibilità JSON.
+    - `LogsTable`: logging centralizzato di tutti gli eventi e azioni.
+    - `BansTable`: gestisce utenti bannati e motivazioni.
+3. Lambda Functions (`functions/`)
+    - Tutte le Lambda sono in un'unica cartella, con validazione input e risposta HTTP centralizzate in `utils.py`.
+    - `connect.py` / `disconnect.py`: gestiscono connessioni/disconnessioni WebSocket e aggiornano lo stato del giocatore.
+    - `set_number.py`: permette al giocatore di scegliere/cambiare il proprio numero (con limite giornaliero e controllo univocità).
+    - `guess_number.py`: logica di gioco per indovinare il numero di altri giocatori. Penalità: il giocatore colpito non viene eliminato ma subisce azzeramento numero, -10 punti e lastUpdate retrodatato.
+    - `get_scores.py`: restituisce la classifica aggiornata.
+    - `ban_user.py`: endpoint di amministrazione per bannare utenti e notificare via WebSocket.
+    - `get_match_log.py`: API per consultare lo storico dei match, con conversione automatica dei tipi numerici.
+    - `match_control.py`: funzioni avanzate di amministrazione (broadcast messaggi, reset numeri).
+    - `cleanup_inactive.py`: Lambda per rimozione automatica utenti inattivi da più di X giorni.
+    - `log_event.py`: logging centralizzato su DynamoDB.
+    - `cors_options.py`: Lambda dedicata per rispondere a tutte le richieste OPTIONS e gestire il CORS REST in modo centralizzato.
+    - `utils.py`: funzioni di utilità (validazione input, risposta HTTP uniforme, header CORS, ecc.).
 4. API Gateway
-    - REST API: endpoint per amministrazione, classifica, storico match, ban, ecc.
-    - WebSocket API: comunicazione in tempo reale per notifiche di gioco e amministrazione.
+    - REST API: endpoint per amministrazione, classifica, storico match, ban, ecc. CORS gestito globalmente tramite Lambda dedicata e header uniformi.
+    - WebSocket API: comunicazione in tempo reale per notifiche di gioco e amministrazione. Route $default per gestire messaggi generici (es. nickname).
 5. Sicurezza e Validazione
-    - Validazione input lato Lambda (nickname, numero scelto).
-    - Logging di tutte le azioni e errori.
+    - Validazione input lato Lambda (nickname, numero scelto, limiti giornalieri, tentativi, ecc.).
+    - Logging di tutte le azioni e errori in una tabella dedicata.
     - Gestione ban e utenti inattivi.
-6. Parametri e Configurazione
-    - Tutti i nomi delle risorse e limiti sono parametrizzati per ambienti diversi.
-    - Facile estensione per nuove funzioni o endpoint.
-    - In Output gli URL WebSocket e REST API forniti come output del template per integrazione client.
+    - Permessi IAM minimi e Lambda Permission per sicurezza.
+    - **il gioco non prevede un sistema di autenticazione/autorizzazione** *coming soon?*
+6. Logging
+    - Tutte le azioni e gli errori sono loggati in una tabella DynamoDB dedicata (`LogsTable`).
+    - CloudWatch Log Group configurato per REST e WebSocket API.
+7. Frontend
+    - Pagine HTML/JS in `frontend/` (admin, user, game, index, error) con Bootstrap.
+    - La pagina admin mostra lo storico completo dei match (con paginazione lato backend se necessario).
+    - Tutte le chiamate fetch gestiscono errori e CORS in modo robusto.
+    - Aggiornare gli endpoint API e WebSocket nei file frontend dopo il deploy.
+8. Deploy
+    - Bucket S3 configurato per hosting statico sicuro (solo HTTPS, policy restrittiva).
+    - Comandi per build, deploy, pulizia e caricamento file frontend documentati nella sezione Deploy.
+9. Best Practice
+    - Applicate best practice su permessi minimi, logging, validazione input, gestione errori e CORS.
+    - Tutte le risorse principali sono taggate per tracciabilità.
 
 
+## Deploy su AWS
+* Comandi per la creazione dell'esempio
+    ```
+    sam validate
+    sam build
+    sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket cloudformation-alnao
+    sam deploy --template-file packagedV1.yaml --stack-name Esempio30WebSocket --capabilities CAPABILITY_IAM
+    ```
+* Comando per verificare il template:
+    ```
+    aws cloudformation describe-stacks --stack-name Esempio30WebSocket --query "Stacks[0].Outputs"
+    ```
+* Comandi per caricare i file nel bucket
+    ```
+    BUCKET_NAME="esempio30-website-bucket"
+    aws s3 cp ./frontend "s3://$BUCKET_NAME/" --recursive
+        # Se vuoi che i file siano pubblicamente leggibili (già consentito dalla bucket policy, ma puoi forzare i permessi oggetto):
+        aws s3 cp ./frontend "s3://$BUCKET_NAME/" --recursive --acl public-read
+    ```
+    - prima di essere caricati devono essere modificati sostituendo i valori delle API e WebSocket con gli indirizzi corretti creati e ritornati da CloudFormation
+    - nell'attuale versione del template le pagine potrebbero non funzionare per errore di permessi
+* Comandi per la rimozione totale
+    ```
+    # 1. Svuota il bucket S3 (necessario prima di eliminare lo stack)
+    BUCKET_NAME="esempio30-website-bucket"
+    aws s3 rm "s3://$BUCKET_NAME" --recursive
+    
+    # 2. Elimina lo stack CloudFormation (elimina tutte le risorse)
+    aws cloudformation delete-stack --stack-name Esempio30WebSocket
+    
+    # 3. Verifica che lo stack sia stato eliminato
+    aws cloudformation describe-stacks --stack-name Esempio30WEbSocket
+    # Dovrebbe restituire errore "does not exist" quando completato
+    
+    # 4. Opzionale: elimina manualmente eventuali log group rimasti
+    aws logs describe-log-groups --log-group-name-prefix "/aws/apigateway/" --query "logGroups[].logGroupName" --output text | tr '\t' '\n' | xargs -r -n 1 aws logs delete-log-group --log-group-name
+    aws logs describe-log-groups --log-group-name-prefix "/aws/lambda/" --query "logGroups[].logGroupName" --output text | tr '\t' '\n' | xargs -r -n 1 aws logs delete-log-group --log-group-name
+    ```
+
+## Stima dei costi
+1. DynamoDB: Tabella on-demand (PAY_PER_REQUEST):
+    - 10 utenti: pochissime letture/scritture, costo trascurabile (probabilmente sotto 1-2 €/mese).
+    - 10.000 utenti: se ogni utente fa 100 operazioni/giorno → 1 milione di request/mese ≈ 1,25 €/mese (letture) + 6,5 €/mese (scritture).
+    - Storage: 1 GB ≈ 0,25 €/mese (dati e log).
+2. AWS Lambda
+    - 10 utenti: chiamate Lambda molto basse, probabilmente gratis (rientra nel free tier: 1 milione di invocazioni/mese e 400.000 GB-sec/mese).
+    - 10.000 utenti: supponiamo 1 milione di invocazioni/mese, 128 MB, 100 ms → circa 0,20 €/mese (oltre il free tier).
+3. API Gateway (REST + WebSocket): REST API: 3,50 €/milione di chiamatee e WebSocket API: 1,00 €/milione di messaggi + 0,25 €/connessione/ora.
+    - 10 utenti: costo trascurabile, sotto 1 €/mese.
+    - 10.000 utenti: 10.000 connessioni * 24h * 30gg = 7,2 milioni di connessioni-ora ≈ 1.800 €/mese solo per WebSocket (0,25 €/connessione/ora).
+    - Messaggi: 10.000 utenti * 100 msg/giorno * 30 = 30 milioni di msg/mese ≈ 30 €/mese.
+4. S3 (hosting statico)
+    - Storage: 1 GB ≈ 0,025 €/mese.
+    - Traffic: 10 GB/mese ≈ 1 €/mese.
+5. CloudWatch Logs
+    - Log storage: 1 GB ≈ 0,10 €/mese.
+    - Log ingestion: trascurabile per questi volu
+6. Riepilogo mensile (stima, prezzi nella region *EU-Central*, agosto 2025)
+    | Servizio         | 10 utenti         | 10.000 utenti         |
+    |------------------|-------------------|-----------------------|
+    | DynamoDB         | < 1 €             | 8 €                   |
+    | Lambda           | 0 € (free tier)   | 0,20 €                |
+    | API Gateway REST | < 1 €             | 10 €                  |
+    | API Gateway WS   | < 1 €             | 1.800 € (connessioni) |
+    | S3               | < 1 €             | 1 €                   |
+    | CloudWatch Logs  | < 1 €             | 1 €                   |
+    | **Totale**       | **~3-4 €**        | **~1.820 €**          |
+    - Il costo delle WebSocket API cresce linearmente con le connessioni attive (0,25 €/connessione/ora). Per 10 utenti il costo è trascurabile, per 10.000 utenti il costo delle WebSocket API è molto alto. Se vuoi scalare a molti utenti, valuta soluzioni alternative (es. Amazon Elasticache, AppSync, MQTT, o architetture ibride).
+    - In fondo alla chiacchierata con GitHub Copilot sono presenti alcune alternative molto più economiche.
 
 
-## Chiacchieraa con GitHub - Copilot
-
+## Chiacchieraa con GitHub Copilot
 1) Creazione files
     - mi dici quale lo standard/protocollo per fare uno stream di dati tra server e client pensando ad un server su AWS eclient sito web/applicazione/dispositivo ?
     - ok vorrei usare WebSocket per trasmettere dati da un server ad un client, tipo un gioco, con una serie di utenti collegati, ogni giocatore può dire un numero o cambiare il precedente, un giocatore vince la partita quando indovina il numero di un qualsiasi altro giocatore, inizialmente i giocatori non hanno un numero di default ma vengono eliminati se non dicono un numero entro un minuto, ogni giocatore deve cambiare numero ogni 3 ore altrimenti viene eliminato. vorrei creare tutto questo con un bel template cloudformation, se ti serve un linguaggio usa python
@@ -82,52 +178,56 @@
 Se un utente si collega, imposta un numero e poi chiude il browser senza fare disconnect:
     - La connessione WebSocket viene chiusa automaticamente dal browser: Se la tua Lambda associata alla route $disconnect di API Gateway è configurata correttamente, riceverà l’evento di disconnessione e potrà aggiornare lo stato del giocatore (es. rimuovere il connectionId dal record DynamoDB).
     - Il giocatore rimane nella tabella: Il nickname, il numero e lo stato del giocatore restano salvati in DynamoDB. Il giocatore non viene eliminato solo perché ha chiuso il browser. Il giocatore risulta ancora “attivo” per il sistema, finché non viene eliminato da una regola di cleanup (es. inattività > X giorni) o da un altro giocatore che indovina il suo numero.
-    - Se si ricollega con lo stesso nickname, può continuare a giocare (a meno che non sia stato eliminato/bannato nel frattempo). Non riceverà più notifiche WebSocket finché non si riconnette.
     - Se vuoi che la disconnessione comporti anche la rimozione del giocatore dal gioco, dovresti modificare la Lambda di disconnect per eliminare il record del giocatore, ma così facendo perderesti la persistenza tra sessioni.
     - In sintesi: il giocatore resta nel gioco (con nickname e numero) anche se chiude il browser senza fare disconnect, ma non riceverà più notifiche in tempo reale finché non si riconnette.
 7) eseguite diverse modifiche al template per permessi mancanti, stage websocket mancante (che poi funzia), tante bestemmie e tante discussioni con una IA spesso con allucinazioni!
+8) eseguite diverse modifiche al template per la gestione del CORS: infatti usare l'APIGateway è un *casino*: aggiunta regola IAM poi tolta, infine aggiunta una lambda dedicata con la regola `{proxy+}`, poi modificato il utils.py *perdendo un sacco di tempo*
+9) alla fine funziona con modifiche anche manuali
+10) Revisione dei costi: dammi alternative più economiche al WebSocket ma con sempre la possiblità di avere un sistema che invia messaggi ai giocatori
+    1. Amazon SNS + Polling
+        Ogni giocatore si iscrive a un topic SNS (o a un endpoint HTTP personale).
+        Le Lambda pubblicano messaggi su SNS.
+        I client fanno polling periodico (es. ogni 5-10 secondi) su una REST API per ricevere nuovi messaggi.
+        Pro: Costi bassissimi, semplice, scalabile.
+        Contro: Non è realtime puro, ma “quasi realtime” (dipende dalla frequenza di polling).
+    2. REST API + Long Polling
+        I client fanno richieste REST (es. /messages) che restano aperte fino a quando arriva un messaggio o scade il timeout.
+        Quando c’è un evento, la Lambda risponde subito.
+        Pro: Più reattivo del polling classico, costi solo di REST API.
+        Contro: Più complesso da gestire lato client/server, ma molto più economico di WebSocket.
+    3. Amazon AppSync (GraphQL Subscriptions)
+        AppSync supporta le subscription (push) via WebSocket, ma con costi molto più bassi e scalabilità migliore rispetto ad API Gateway WebSocket.
+        Pro: Più economico, gestito, supporta anche fallback su polling.
+        Contro: Richiede GraphQL, un po’ di apprendimento.
+    4. Amazon SQS + Polling
+        Ogni giocatore ha una coda SQS personale o una coda condivisa con filtro.
+        Le Lambda inviano messaggi su SQS.
+        I client fanno polling REST su una Lambda che legge da SQS.
+        Pro: Costi molto bassi, affidabile.
+        Contro: Non è push puro, ma polling.
+    5. Server-Sent Events (SSE)
+        REST API che tiene aperta una connessione HTTP e invia eventi dal server al client.
+        Pro: Più semplice e meno costoso di WebSocket, supportato da molti browser.
+        Contro: Solo server→client, non bidirezionale.
+    - In sintesi: Per costi minimi su AWS, la soluzione REST API + polling (o long polling) è la più semplice e scalabile. Se vuoi push vero e costi bassi, valuta AppSync o SSE.
 
 
-# Deploy
-* Comandi per la creazione dell'esempio
-    ```
-    sam validate
-    sam build
-    sam package --output-template-file packagedV1.yaml --s3-prefix REPOSITORY --s3-bucket cloudformation-alnao
-    sam deploy --template-file packagedV1.yaml --stack-name Esempio30WebSocket --capabilities CAPABILITY_IAM
-    ```
-* Comando per verificare il template:
-    ```
-    aws cloudformation describe-stacks --stack-name Esempio30WebSocket --query "Stacks[0].Outputs"
-    ```
-* Comandi per caricare i file nel bucket
-    ```
-    BUCKET_NAME="esempio30-website-bucket"
-    aws s3 cp ./frontend "s3://$BUCKET_NAME/" --recursive
-        # Se vuoi che i file siano pubblicamente leggibili (già consentito dalla bucket policy, ma puoi forzare i permessi oggetto):
-        aws s3 cp ./frontend "s3://$BUCKET_NAME/" --recursive --acl public-read
-    ```
-* Comandi per la rimozione totale
-    ```
-    # 1. Svuota il bucket S3 (necessario prima di eliminare lo stack)
-    BUCKET_NAME="esempio30-website-bucket"
-    aws s3 rm "s3://$BUCKET_NAME" --recursive
-    
-    # 2. Elimina lo stack CloudFormation (elimina tutte le risorse)
-    aws cloudformation delete-stack --stack-name Esempio30WebSocket
-    
-    # 3. Verifica che lo stack sia stato eliminato
-    aws cloudformation describe-stacks --stack-name Esempio30WEbSocket
-    # Dovrebbe restituire errore "does not exist" quando completato
-    
-    # 4. Opzionale: elimina manualmente eventuali log group rimasti
-    aws logs describe-log-groups --log-group-name-prefix "/aws/apigateway/" --query "logGroups[].logGroupName" --output text | tr '\t' '\n' | xargs -r -n 1 aws logs delete-log-group --log-group-name
-    aws logs describe-log-groups --log-group-name-prefix "/aws/lambda/" --query "logGroups[].logGroupName" --output text | tr '\t' '\n' | xargs -r -n 1 aws logs delete-log-group --log-group-name
-    ```
+# AlNao.it
+Tutti i codici sorgente e le informazioni presenti in questo repository sono frutto di un attento e paziente lavoro di sviluppo da parte di Alberto Nao, che si è impegnato a verificarne la correttezza nella misura massima possibile. Qualora parte del codice o dei contenuti sia stato tratto da fonti esterne, la relativa provenienza viene sempre citata, nel rispetto della trasparenza e della proprietà intellettuale. 
 
-Fermato che
-- il sito web su s3 non funziona
-- chiamato con http da errore cors
-- websocket non funziona e mi dice {"message": "Forbidden", "connectionId":"PQjywckZFiACGxA=", "requestId":"PQjywHUIliAET_w="}
+
+Alcuni contenuti e porzioni di codice presenti in questo repository sono stati realizzati anche grazie al supporto di strumenti di intelligenza artificiale, il cui contributo ha permesso di arricchire e velocizzare la produzione del materiale. Ogni informazione e frammento di codice è stato comunque attentamente verificato e validato, con l’obiettivo di garantire la massima qualità e affidabilità dei contenuti offerti. 
+
+
+Per ulteriori dettagli, approfondimenti o richieste di chiarimento, si invita a consultare il sito [alnao.it](https://www.alnao.it/).
+
+
+## License
+Public projects 
+<a href="https://it.wikipedia.org/wiki/GNU_General_Public_License"  valign="middle"><img src="https://img.shields.io/badge/License-GNU-blue" style="height:22px;"  valign="middle"></a> 
+*Free Software!*
+
+E' garantito il permesso di copiare, distribuire e/o modificare questo documento in base ai termini della GNU Free Documentation License, Versione 1.2 o ogni versione successiva pubblicata dalla Free Software Foundation. Permission is granted to copy, distribute and/or modify this document under the terms of the GNU Free Documentation License, Version 1.2 or any later version published by the Free Software Foundation.
+
 
 

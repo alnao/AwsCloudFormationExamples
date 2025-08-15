@@ -15,7 +15,13 @@ def send_ws_to_all(message):
     for p in players:
         connection_id = p.get('connectionId')
         if apigateway and connection_id:
-            apigateway.post_to_connection(ConnectionId=connection_id, Data=json.dumps(message).encode('utf-8'))
+            try:
+                apigateway.post_to_connection(ConnectionId=connection_id, Data=json.dumps(message).encode('utf-8'))
+            except Exception as e:
+                print(f"Errore invio WebSocket a {connection_id}: {e}")
+                # Rimuovi connectionId invalido
+                p.pop('connectionId', None)
+                players_table.put_item(Item=p)
 
 def reset_all_numbers():
     response_scan = players_table.scan()
@@ -29,7 +35,11 @@ def reset_all_numbers():
         players_table.put_item(Item=p)
 
 def lambda_handler(event, context):
-    body = json.loads(event.get("body", "{}"))
+    try:
+        body = json.loads(event.get("body", "{}"))
+    except json.JSONDecodeError:
+        return response(400, error='Body JSON non valido')
+    
     action = body.get('action')
     if action == 'broadcast':
         text = body.get('text', '')
